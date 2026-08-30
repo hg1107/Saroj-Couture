@@ -1,36 +1,144 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Saroj Couture — Website
 
-## Getting Started
+Bespoke women's designer wear and custom stitching. Teka Naka, Kamptee Road, Nagpur.
 
-First, run the development server:
+Built with **Next.js 15 (App Router) · TypeScript · Tailwind CSS v4 · Supabase**.
+
+---
+
+## Prerequisites
+
+| Tool | Version |
+|---|---|
+| Node.js | ≥ 20 |
+| npm | ≥ 10 |
+| Supabase project | Free tier |
+
+---
+
+## Setup
+
+### 1. Clone & install
+
+```bash
+git clone <repo-url> couture
+cd couture/src
+npm install
+```
+
+### 2. Create your environment file
+
+```bash
+cp .env.local.example .env.local
+```
+
+Open `.env.local` and fill in the three Supabase values from your [Supabase Dashboard → Settings → API](https://supabase.com/dashboard):
+
+| Variable | Where to find it |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Settings → API → Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Settings → API → Project API keys → `anon public` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Settings → API → Project API keys → `service_role` ⚠️ Keep secret |
+
+> **Important:** Never commit `.env.local` or expose `SUPABASE_SERVICE_ROLE_KEY` to the browser.
+
+### 3. Run database migrations
+
+Once the Supabase schema migration file exists at `../supabase/migrations/00001_initial_schema.sql`:
+
+```bash
+# Using Supabase CLI (install: npm i -g supabase)
+supabase db push
+
+# Or run the SQL directly in the Supabase SQL Editor
+```
+
+### 4. Start the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) — you should see the placeholder homepage.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project structure
 
-## Learn More
+```
+couture/
+├── GUI/                         # Stitch design exports (reference only)
+├── boutique-website-prd.md      # Product Requirements Document
+├── PLAN.md                      # Full implementation plan
+├── supabase/                    # DB migrations and seed data
+└── src/                         # ← Next.js app lives here
+    ├── app/                     # Routes (App Router)
+    │   ├── page.tsx             # Homepage /
+    │   ├── category/[slug]/     # Category gallery
+    │   ├── garment/[slug]/      # Garment detail
+    │   ├── admin/               # Owner admin (auth-guarded)
+    │   └── auth/                # Login + callback
+    ├── components/              # UI, layout, garment, admin, SEO components
+    ├── lib/
+    │   ├── supabase/            # Supabase clients + types
+    │   ├── actions/             # Next.js Server Actions
+    │   ├── queries/             # Server-side data fetchers
+    │   └── utils/               # slug, whatsapp, image-processing, constants
+    ├── middleware.ts             # Session refresh + /admin auth guard
+    └── types/                   # Shared TypeScript types
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Verify the scaffold boots
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+cd src
+npm run dev
+```
 
-## Deploy on Vercel
+Then check these routes all respond (no 500s):
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| URL | Expected |
+|---|---|
+| `http://localhost:3000/` | "Coming soon — Homepage" |
+| `http://localhost:3000/category/saree` | "Coming soon — Category: saree" |
+| `http://localhost:3000/garment/silk-organza-saree` | "Coming soon — Garment: silk-organza-saree" |
+| `http://localhost:3000/auth/login` | Login placeholder |
+| `http://localhost:3000/admin` | Redirects → `/auth/login` (no env vars set) |
+| `http://localhost:3000/sitemap.xml` | Basic sitemap XML |
+| `http://localhost:3000/robots.txt` | robots.txt disallowing /admin |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+TypeScript build check (no runtime needed):
+
+```bash
+npm run build
+```
+
+Lint:
+
+```bash
+npm run lint
+```
+
+---
+
+## Build phases
+
+See [PLAN.md](../PLAN.md) for the full phased build order.
+
+| Phase | Focus |
+|---|---|
+| 0 (done ✓) | Scaffold — this state |
+| 1 | Database schema + auth login |
+| 2 | UI primitives + layout components |
+| 3 | Admin CRUD (categories + garments + image upload) |
+| 4 | Public pages (homepage, category, garment detail) |
+| 5 | SEO (sitemap, metadata, JSON-LD, Lighthouse) |
+| 6 | Polish + Vercel deploy |
+
+---
+
+## Contact
+
+WhatsApp: +91 76203 64981 · Instagram: [@saroj_couture](https://www.instagram.com/saroj_couture)
