@@ -1,5 +1,5 @@
 import { getAllCategoriesAdmin, getCategoryGarmentCounts } from "@/lib/queries/categories";
-import CategoryListClient from "../../../components/admin/CategoryListClient";
+import CategoryListClient from "@/components/admin/CategoryListClient";
 
 export const metadata = { title: "Categories | Admin — Saroj Couture" };
 

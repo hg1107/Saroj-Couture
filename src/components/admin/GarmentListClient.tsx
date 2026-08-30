@@ -4,25 +4,12 @@ import { useState, useMemo, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { Category, GarmentStatus } from "@/lib/supabase/types";
+import type { Category, GarmentListItem, GarmentStatus } from "@/lib/supabase/types";
 import { deleteGarment, toggleGarmentStatus, toggleGarmentFeatured } from "@/lib/actions/garments";
 import { formatPrice } from "@/lib/utils/format";
 
-interface GarmentRow {
-  id: string;
-  title: string;
-  slug: string;
-  price: number | null;
-  price_type: string;
-  status: GarmentStatus;
-  is_featured: boolean;
-  category_id: string;
-  categories: { name: string; slug: string } | null;
-  images: { url: string; alt_text: string | null; display_order: number }[];
-}
-
 interface Props {
-  initialGarments: GarmentRow[];
+  initialGarments: GarmentListItem[];
   categories: Category[];
 }
 

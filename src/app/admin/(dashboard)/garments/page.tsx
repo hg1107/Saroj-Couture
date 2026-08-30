@@ -12,7 +12,7 @@ export default async function AdminGarmentsPage() {
 
   return (
     <GarmentListClient
-      initialGarments={garments as any}
+      initialGarments={garments}
       categories={categories}
     />
   );

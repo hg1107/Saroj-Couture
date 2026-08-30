@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { logoutAction } from "@/lib/actions/auth";
 
-/** AdminHeader — fixed top bar for all /admin/* pages. */
+/** AdminHeader — fixed top bar for the authenticated admin dashboard. */
 function AdminHeader() {
   return (
     <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-mobile h-16 bg-background border-b border-outline-variant">
@@ -28,7 +28,7 @@ function AdminHeader() {
   );
 }
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh flex flex-col bg-surface-container-low">
       <AdminHeader />

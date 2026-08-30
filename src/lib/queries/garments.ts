@@ -3,7 +3,7 @@
  * Public queries rely on anon RLS: only published garments in visible categories.
  */
 import { createServerClient } from "@/lib/supabase/server";
-import type { GarmentWithCategory, GarmentWithImages } from "@/lib/supabase/types";
+import type { GarmentWithCategory, GarmentWithImages, GarmentListItem } from "@/lib/supabase/types";
 export { formatPrice } from "@/lib/utils/format";
 
 const COVER_IMAGE_SELECT = `
@@ -95,12 +95,15 @@ export async function getGarmentBySlug(slug: string): Promise<GarmentWithImages 
 }
 
 /**
- * Admin: all garments with optional search and category filter.
+ * Admin: all garments regardless of status (published + hidden), with
+ * optional search and category filter. Relies on the `auth_select_all_garments`
+ * RLS policy (TO authenticated) — an anon/unauthenticated request only ever
+ * gets back published garments in visible categories, never hidden ones.
  */
 export async function getAllGarmentsAdmin(
   search?: string,
   categoryId?: string
-): Promise<GarmentWithCategory[]> {
+): Promise<GarmentListItem[]> {
   const supabase = await createServerClient();
   let query = supabase
     .from("garments")
@@ -116,7 +119,7 @@ export async function getAllGarmentsAdmin(
 
   const { data, error } = await query;
   if (error) throw new Error(`getAllGarmentsAdmin: ${error.message}`);
-  return (data ?? []) as GarmentWithCategory[];
+  return (data ?? []) as GarmentListItem[];
 }
 
 /**

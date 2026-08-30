@@ -20,10 +20,14 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Session cookie lifetime — 30 days.
+  const THIRTY_DAYS = 60 * 60 * 24 * 30;
+
   const supabase = createSSRServerClient<Database>(
     supabaseUrl,
     supabaseKey,
     {
+      cookieOptions: { maxAge: THIRTY_DAYS },
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -47,11 +51,18 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
-  
-  // Guard /admin/* — redirect unauthenticated users to /auth/login
-  if (pathname.startsWith("/admin") && !user) {
+
+  // Admin routes reachable without a session (login + forgot-password).
+  const PUBLIC_ADMIN_PATHS = ["/admin/login", "/admin/forgot-password"];
+
+  // Guard /admin/* — redirect unauthenticated users to /admin/login
+  if (
+    pathname.startsWith("/admin") &&
+    !PUBLIC_ADMIN_PATHS.includes(pathname) &&
+    !user
+  ) {
     const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/auth/login";
+    loginUrl.pathname = "/admin/login";
     const redirectRes = NextResponse.redirect(loginUrl);
     // Preserve any cookies updated by supabase.auth.getUser()
     supabaseResponse.cookies.getAll().forEach((cookie) => {
@@ -60,10 +71,10 @@ export async function updateSession(request: NextRequest) {
     return redirectRes;
   }
 
-  // Guard /auth/login — redirect authenticated users away from login
-  if (pathname === "/auth/login" && user) {
+  // Guard /admin/login — redirect already-authenticated users away from login
+  if (pathname === "/admin/login" && user) {
     const adminUrl = request.nextUrl.clone();
-    adminUrl.pathname = "/admin";
+    adminUrl.pathname = "/admin/garments";
     const redirectRes = NextResponse.redirect(adminUrl);
     // Preserve any cookies updated by supabase.auth.getUser()
     supabaseResponse.cookies.getAll().forEach((cookie) => {

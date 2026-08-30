@@ -146,3 +146,8 @@ export type GarmentWithImages = Garment & {
   images: GarmentImage[];
   categories: Pick<Category, "name" | "slug"> | null;
 };
+
+// Garment with joined category + cover images — used in admin list views
+export type GarmentListItem = GarmentWithCategory & {
+  images: Pick<GarmentImage, "id" | "url" | "alt_text" | "display_order">[];
+};
