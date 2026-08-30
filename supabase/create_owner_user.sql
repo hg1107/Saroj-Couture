@@ -1,0 +1,69 @@
+-- =============================================================================
+-- create_owner_user.sql
+-- Saroj Couture — create the single owner account in Supabase Auth
+--
+-- HOW TO USE
+-- ----------
+-- Run this in the Supabase SQL Editor (not via the JS client).
+-- Replace the placeholder values before running.
+--
+-- IMPORTANT: This script uses the auth schema directly.  It is safe to run
+-- once in the Supabase dashboard SQL editor.  Do NOT commit real credentials.
+-- =============================================================================
+
+-- Step 1 – create the user row in auth.users
+-- Supabase stores passwords as bcrypt hashes.  The easiest way to set the
+-- password is via the Dashboard UI (see instructions below).  However, if
+-- you want a fully scripted setup you can use the service-role REST endpoint:
+--
+--   curl -X POST '<YOUR_SUPABASE_URL>/auth/v1/admin/users' \
+--     -H 'apikey: <SERVICE_ROLE_KEY>' \
+--     -H 'Authorization: Bearer <SERVICE_ROLE_KEY>' \
+--     -H 'Content-Type: application/json' \
+--     -d '{
+--           "email": "owner@sarojcouture.com",
+--           "password": "REPLACE_WITH_STRONG_PASSWORD",
+--           "email_confirm": true
+--         }'
+--
+-- The response JSON contains the new user's "id" (a UUID).
+-- Copy that UUID — it is the owner UID referenced in the notes below.
+--
+-- -----------------------------------------------------------------------
+-- DASHBOARD METHOD (simpler, recommended for a one-off owner account)
+-- -----------------------------------------------------------------------
+-- 1. Open your Supabase project → Authentication → Users tab.
+-- 2. Click "Invite user" (or "Add user" depending on your dashboard version).
+-- 3. Enter the owner email and a strong password.
+-- 4. Confirm the email if prompted (or tick "Auto Confirm").
+-- 5. The new row appears in the Users list.  Click it to see the UUID.
+-- 6. That UUID is the owner UID — save it somewhere safe.
+--    It is also available via: SELECT id FROM auth.users WHERE email = 'owner@sarojcouture.com';
+-- -----------------------------------------------------------------------
+--
+-- HOW THE OWNER UID IS USED IN THIS PROJECT
+-- ------------------------------------------
+-- The current RLS design relies on the fact that sign-ups are DISABLED on
+-- the Supabase project.  Any authenticated user = the owner.  Therefore
+-- the policies use `TO authenticated` without checking a specific UID.
+--
+-- If you ever want to hard-code the UID (extra paranoia), replace the
+-- policies' `USING (true)` with `USING (auth.uid() = '<OWNER_UUID>')`.
+-- That way even if a second user were accidentally created they could not
+-- write to the database.
+--
+-- DISABLING SIGN-UPS
+-- -------------------
+-- In Supabase Dashboard → Authentication → Providers → Email:
+--   • Toggle "Enable Email provider"           ON
+--   • Toggle "Confirm email"                   ON  (owner must verify)
+--   • Toggle "Allow new users to sign up"      OFF  ← critical
+--
+-- With sign-ups disabled, /auth/v1/signup returns 400 for any anonymous
+-- caller, and the only way to create a user is via the service-role API
+-- or the dashboard — both require your Supabase credentials.
+
+-- Quick verification query — run after creating the user:
+SELECT id, email, created_at, email_confirmed_at
+FROM auth.users
+WHERE email = 'owner@sarojcouture.com';
