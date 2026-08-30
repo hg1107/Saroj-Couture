@@ -7,6 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export interface CategoryFormState {
   error?: string;
   success?: boolean;
+  id?: string;
 }
 
 function toSlug(name: string): string {
@@ -59,6 +60,9 @@ export async function createCategory(
         .single();
       if (r2.error) return { error: r2.error.message };
       await applyCoverImage(supabase, r2.data?.id, formData);
+      revalidatePath("/");
+      revalidatePath("/admin/categories");
+      return { success: true, id: r2.data?.id };
     } else {
       return { error: error.message };
     }
@@ -68,7 +72,7 @@ export async function createCategory(
 
   revalidatePath("/");
   revalidatePath("/admin/categories");
-  return { success: true };
+  return { success: true, id: cat?.id };
 }
 
 async function applyCoverImage(supabase: AnySupabase, id: string | undefined, formData: FormData) {

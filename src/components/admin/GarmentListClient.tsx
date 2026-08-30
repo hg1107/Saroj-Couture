@@ -189,7 +189,7 @@ export default function GarmentListClient({ initialGarments, categories }: Props
                     >
                       <li role="none">
                         <Link
-                          href={`/admin/garments/${g.id}`}
+                          href={`/admin/garments/${g.id}/edit`}
                           role="menuitem"
                           className="block px-4 py-2 font-body-sm text-body-sm text-on-surface hover:bg-surface-container transition-colors"
                           onClick={() => setMenuOpen(null)}

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useRef, useTransition, useActionState } from "react";
-import Image from "next/image";
+import { useState, useTransition, useActionState } from "react";
 import { useRouter } from "next/navigation";
 import type { Category, GarmentWithImages, PriceType } from "@/lib/supabase/types";
 import { createGarment, updateGarment, type GarmentFormState } from "@/lib/actions/garments";
+import { createCategory } from "@/lib/actions/categories";
 
 interface Props {
   categories: Category[];
@@ -12,22 +12,43 @@ interface Props {
 }
 
 const initialState: GarmentFormState = {};
+const DESCRIPTION_MAX = 300;
+const MAX_IMAGES = 6;
+
+function isValidUrl(value: string): boolean {
+  try {
+    new URL(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export default function GarmentFormClient({ categories, garment }: Props) {
-  const router          = useRouter();
-  const isEdit          = !!garment;
-  const [, startTrans]  = useTransition();
-  const fileInputRef    = useRef<HTMLInputElement>(null);
+  const router = useRouter();
+  const isEdit = !!garment;
 
   // ── Local state ──────────────────────────────────────────────────────────
   const [priceType, setPriceType] = useState<PriceType>(garment?.price_type ?? "fixed");
   const [descCount, setDescCount] = useState((garment?.description ?? "").length);
 
-  // Preview images (existing + newly picked)
-  const [previews, setPreviews] = useState<{ id: string; url: string; isNew: boolean }[]>(
-    (garment?.images ?? []).map((img) => ({ id: img.id, url: img.url, isNew: false }))
+  // Category dropdown + inline "+ New category"
+  const [localCategories, setLocalCategories] = useState(categories);
+  const [categoryId, setCategoryId] = useState(garment?.category_id ?? "");
+  const [showNewCategory, setShowNewCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryError, setNewCategoryError] = useState<string | undefined>();
+  const [isCategoryPending, startCategoryTransition] = useTransition();
+
+  // Images — Phase 6 will add real uploads; for now the owner pastes in
+  // URLs of images already uploaded elsewhere (e.g. to Supabase Storage).
+  const [imageUrls, setImageUrls] = useState<string[]>(
+    (garment?.images ?? []).map((img) => img.url)
   );
-  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [imageUrlInput, setImageUrlInput] = useState("");
+  const [imageUrlError, setImageUrlError] = useState<string | undefined>();
+
+  const [, startRedirectTransition] = useTransition();
 
   // Server Action binding
   const action = isEdit
@@ -36,28 +57,60 @@ export default function GarmentFormClient({ categories, garment }: Props) {
 
   const [state, formAction, isPending] = useActionState(action, initialState);
 
-  // ── Image picking ────────────────────────────────────────────────────────
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []);
-    const remaining = 6 - previews.length;
-    const picked = files.slice(0, remaining);
-    const newPreviews = picked.map((f) => ({
-      id: URL.createObjectURL(f),
-      url: URL.createObjectURL(f),
-      isNew: true,
-    }));
-    setPreviews((p) => [...p, ...newPreviews]);
-    setNewFiles((prev) => [...prev, ...picked]);
+  function goToList() {
+    router.push("/admin/garments");
   }
 
-  function removePreview(id: string) {
-    setPreviews((p) => p.filter((img) => img.id !== id));
-    setNewFiles((f) => f); // file removal handled by FormData reconstruction
+  // ── Inline category creation ─────────────────────────────────────────────
+  function handleCreateCategory() {
+    const name = newCategoryName.trim();
+    if (!name) return;
+    setNewCategoryError(undefined);
+    startCategoryTransition(async () => {
+      const fd = new FormData();
+      fd.set("name", name);
+      const result = await createCategory(undefined, fd);
+      if (result.error || !result.id) {
+        setNewCategoryError(result.error ?? "Could not create category.");
+        return;
+      }
+      const newCategory: Category = {
+        id: result.id,
+        name,
+        slug: "",
+        display_order: localCategories.length,
+        cover_image_url: null,
+        is_visible: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      setLocalCategories((prev) => [...prev, newCategory]);
+      setCategoryId(result.id);
+      setNewCategoryName("");
+      setShowNewCategory(false);
+    });
+  }
+
+  // ── Image URL list ───────────────────────────────────────────────────────
+  function handleAddImageUrl() {
+    const url = imageUrlInput.trim();
+    if (!url) return;
+    if (!isValidUrl(url)) {
+      setImageUrlError("Enter a full URL, e.g. https://…");
+      return;
+    }
+    setImageUrls((prev) => [...prev, url]);
+    setImageUrlInput("");
+    setImageUrlError(undefined);
+  }
+
+  function removeImageUrl(index: number) {
+    setImageUrls((prev) => prev.filter((_, i) => i !== index));
   }
 
   // ── Success redirect ─────────────────────────────────────────────────────
   if (state?.success) {
-    startTrans(() => router.push("/admin/garments"));
+    startRedirectTransition(() => router.push("/admin/garments"));
   }
 
   return (
@@ -66,8 +119,8 @@ export default function GarmentFormClient({ categories, garment }: Props) {
       <div className="flex items-center justify-between py-6">
         <button
           type="button"
-          aria-label="Cancel and go back"
-          onClick={() => router.back()}
+          aria-label="Cancel and return to garment list"
+          onClick={goToList}
           className="hover:opacity-80 transition-opacity flex items-center justify-center p-2 -ml-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary rounded"
         >
           <span className="material-symbols-outlined text-primary" aria-hidden="true">close</span>
@@ -78,53 +131,61 @@ export default function GarmentFormClient({ categories, garment }: Props) {
         <div className="w-10" aria-hidden />
       </div>
 
-      {/* ── Image Uploader ────────────────────────────────────────────────── */}
+      {/* ── Image URLs (placeholder — real upload UI lands in Phase 6) ────── */}
       <section className="mb-10" aria-label="Garment images">
-        {previews.length < 6 && (
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="border border-dashed border-outline-variant bg-surface-container-lowest h-40 w-full flex flex-col items-center justify-center cursor-pointer hover:bg-surface-container-low transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
-            aria-label="Add photos"
-          >
-            <span className="material-symbols-outlined text-outline mb-2 text-3xl" aria-hidden="true">photo_camera</span>
-            <p className="font-body-sm text-body-sm text-on-surface-variant">
-              Add photos — up to {6 - previews.length} more
-            </p>
-          </button>
+        <label htmlFor="image_url_input" className="font-label-md text-label-md text-on-surface-variant mb-1 uppercase tracking-wider block">
+          Image URLs
+        </label>
+        <p className="font-body-sm text-body-sm text-on-surface-variant mb-3">
+          Paste the URL of an already-uploaded image. Direct upload is coming soon.
+        </p>
+
+        {imageUrls.length < MAX_IMAGES && (
+          <div className="flex gap-2">
+            <input
+              id="image_url_input"
+              type="url"
+              value={imageUrlInput}
+              onChange={(e) => { setImageUrlInput(e.target.value); setImageUrlError(undefined); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); handleAddImageUrl(); }
+              }}
+              placeholder="https://…"
+              className="flex-grow border-0 border-b border-outline-variant bg-transparent py-2 font-body-md text-body-md text-primary placeholder-outline focus:ring-0 focus:border-primary transition-colors"
+            />
+            <button
+              type="button"
+              onClick={handleAddImageUrl}
+              className="px-4 py-2 border border-outline-variant rounded-sm font-label-md text-label-md uppercase tracking-wider text-primary hover:bg-surface-container-low transition-colors"
+            >
+              Add
+            </button>
+          </div>
         )}
-        <input
-          ref={fileInputRef}
-          type="file"
-          name="images"
-          multiple
-          accept="image/*"
-          onChange={handleFileChange}
-          className="sr-only"
-          aria-hidden="true"
-          tabIndex={-1}
-        />
+        {imageUrlError && (
+          <p role="alert" className="font-body-sm text-body-sm text-error mt-1">{imageUrlError}</p>
+        )}
 
         {/* Thumbnails */}
-        {previews.length > 0 && (
+        {imageUrls.length > 0 && (
           <div className="flex gap-4 mt-4 overflow-x-auto pb-2 snap-x" role="list" aria-label="Selected images">
-            {previews.map((img, i) => (
+            {imageUrls.map((url, i) => (
               <div
-                key={img.id}
+                key={`${url}-${i}`}
                 role="listitem"
-                className="relative w-24 h-24 shrink-0 snap-start bg-surface-container-lowest border border-outline-variant flex items-center justify-center rounded group"
+                className="relative w-24 h-24 shrink-0 snap-start bg-surface-container-lowest border border-outline-variant flex items-center justify-center rounded group overflow-hidden"
               >
-                <Image
-                  src={img.url}
+                {/* Arbitrary pasted URLs aren't covered by next/image's remotePatterns allowlist */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={url}
                   alt={i === 0 ? "Cover image" : `Image ${i + 1}`}
-                  fill
-                  className="object-cover rounded-sm"
-                  unoptimized={img.isNew}
+                  className="w-full h-full object-cover"
                 />
                 <button
                   type="button"
                   aria-label={`Remove image ${i + 1}`}
-                  onClick={() => removePreview(img.id)}
+                  onClick={() => removeImageUrl(i)}
                   className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
                 >
                   <span className="material-symbols-outlined text-xs" aria-hidden="true">close</span>
@@ -138,6 +199,11 @@ export default function GarmentFormClient({ categories, garment }: Props) {
             ))}
           </div>
         )}
+
+        {/* Submitted with the form, in display order */}
+        {imageUrls.map((url, i) => (
+          <input key={`${url}-${i}`} type="hidden" name="image_urls" value={url} />
+        ))}
       </section>
 
       {/* ── Form Fields ───────────────────────────────────────────────────── */}
@@ -164,22 +230,58 @@ export default function GarmentFormClient({ categories, garment }: Props) {
             <label htmlFor="category_id" className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
               Category
             </label>
+            <button
+              type="button"
+              onClick={() => setShowNewCategory((v) => !v)}
+              className="font-label-md text-label-md text-secondary uppercase tracking-wider hover:opacity-80 transition-opacity"
+            >
+              + New category
+            </button>
           </div>
           <div className="relative">
             <select
               id="category_id"
               name="category_id"
               required
-              defaultValue={garment?.category_id ?? ""}
+              value={categoryId}
+              onChange={(e) => setCategoryId(e.target.value)}
               className="w-full border-0 border-b border-outline-variant bg-transparent py-2 font-body-lg text-body-lg text-primary appearance-none focus:ring-0 focus:border-primary transition-colors"
             >
               <option value="" disabled>Select category</option>
-              {categories.map((c) => (
+              {localCategories.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
             <span className="material-symbols-outlined absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-outline" aria-hidden="true">expand_more</span>
           </div>
+
+          {showNewCategory && (
+            <div className="flex gap-2 mt-3">
+              <input
+                type="text"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); handleCreateCategory(); }
+                }}
+                placeholder="New category name"
+                aria-label="New category name"
+                disabled={isCategoryPending}
+                className="flex-grow border-0 border-b border-outline-variant bg-transparent py-2 font-body-md text-body-md text-primary placeholder-outline focus:ring-0 focus:border-primary transition-colors disabled:opacity-50"
+              />
+              <button
+                type="button"
+                onClick={handleCreateCategory}
+                disabled={isCategoryPending || !newCategoryName.trim()}
+                className="px-4 py-2 border border-outline-variant rounded-sm font-label-md text-label-md uppercase tracking-wider text-primary hover:bg-surface-container-low transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isCategoryPending ? "Adding…" : "Add"}
+              </button>
+            </div>
+          )}
+          {newCategoryError && (
+            <p role="alert" className="font-body-sm text-body-sm text-error mt-1">{newCategoryError}</p>
+          )}
         </div>
 
         {/* Fabric */}
@@ -206,14 +308,14 @@ export default function GarmentFormClient({ categories, garment }: Props) {
             id="description"
             name="description"
             rows={3}
-            maxLength={500}
+            maxLength={DESCRIPTION_MAX}
             defaultValue={garment?.description ?? ""}
             placeholder="Describe the garment details…"
             onChange={(e) => setDescCount(e.target.value.length)}
             className="w-full border-0 border-b border-outline-variant bg-transparent py-2 font-body-lg text-body-lg text-primary placeholder-outline resize-none focus:ring-0 focus:border-primary transition-colors"
           />
           <div className="text-right font-body-sm text-body-sm text-on-surface-variant mt-1" aria-live="polite">
-            {descCount}/500
+            {descCount}/{DESCRIPTION_MAX}
           </div>
         </div>
 
@@ -260,7 +362,7 @@ export default function GarmentFormClient({ categories, garment }: Props) {
           </div>
         </fieldset>
 
-        {/* Price */}
+        {/* Price — hidden entirely when priced "on enquiry" */}
         {priceType !== "on_enquiry" && (
           <div className="flex flex-col">
             <label htmlFor="price" className="font-label-md text-label-md text-on-surface-variant mb-1 uppercase tracking-wider">
@@ -341,7 +443,7 @@ export default function GarmentFormClient({ categories, garment }: Props) {
           </button>
           <button
             type="button"
-            onClick={() => router.back()}
+            onClick={goToList}
             className="w-full text-primary font-label-md text-label-md uppercase tracking-wider py-2 text-center underline hover:opacity-70 transition-opacity"
           >
             Cancel

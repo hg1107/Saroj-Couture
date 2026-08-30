@@ -1,28 +1,12 @@
-import { notFound } from "next/navigation";
-import type { Metadata } from "next";
-import { getAllCategoriesAdmin } from "@/lib/queries/categories";
-import { getGarmentByIdAdmin } from "@/lib/queries/garments";
-import GarmentFormClient from "@/components/admin/GarmentFormClient";
+import { redirect } from "next/navigation";
 
 interface Props {
   params: Promise<{ id: string }>;
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+// The edit form lives at /admin/garments/[id]/edit — this bare path just
+// forwards there so any older link (e.g. a bookmark) still works.
+export default async function GarmentRedirectPage({ params }: Props) {
   const { id } = await params;
-  const garment = await getGarmentByIdAdmin(id);
-  return { title: garment ? `Edit ${garment.title} | Admin` : "Edit Garment | Admin" };
-}
-
-export default async function EditGarmentPage({ params }: Props) {
-  const { id } = await params;
-
-  const [garment, categories] = await Promise.all([
-    getGarmentByIdAdmin(id),
-    getAllCategoriesAdmin(),
-  ]);
-
-  if (!garment) notFound();
-
-  return <GarmentFormClient categories={categories} garment={garment} />;
+  redirect(`/admin/garments/${id}/edit`);
 }
