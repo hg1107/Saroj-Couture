@@ -9,6 +9,8 @@ export const runtime = "nodejs";
 
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20MB — generous ceiling above a typical phone photo
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function storagePaths(garmentId: string, imageId: string) {
   return {
     fullPath: `garments/${garmentId}/${imageId}-full.webp`,
@@ -35,8 +37,8 @@ export async function POST(request: Request) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
-  if (!garmentId) {
-    return NextResponse.json({ error: "Missing garmentId" }, { status: 400 });
+  if (!garmentId || !UUID_RE.test(garmentId)) {
+    return NextResponse.json({ error: "Missing or invalid garmentId" }, { status: 400 });
   }
   if (!file.type.startsWith("image/")) {
     return NextResponse.json({ error: "That file isn't an image" }, { status: 400 });
@@ -95,8 +97,8 @@ export async function DELETE(request: Request) {
   const garmentId = body?.garmentId ? String(body.garmentId) : "";
   const imageId   = body?.imageId ? String(body.imageId) : "";
 
-  if (!garmentId || !imageId) {
-    return NextResponse.json({ error: "Missing garmentId or imageId" }, { status: 400 });
+  if (!garmentId || !imageId || !UUID_RE.test(garmentId) || !UUID_RE.test(imageId)) {
+    return NextResponse.json({ error: "Missing or invalid garmentId or imageId" }, { status: 400 });
   }
 
   const { fullPath, thumbPath } = storagePaths(garmentId, imageId);

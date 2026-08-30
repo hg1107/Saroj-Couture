@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { processCoverImage } from "@/lib/utils/image-processing";
+import { STORAGE } from "@/lib/utils/constants";
 
 export interface CategoryFormState {
   error?: string;
@@ -10,27 +12,38 @@ export interface CategoryFormState {
   id?: string;
 }
 
+const MAX_COVER_UPLOAD_BYTES = 20 * 1024 * 1024; // 20MB ceiling, same as garment photos
+
 function toSlug(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
 async function uploadCoverImage(categoryId: string, file: File): Promise<string> {
-  const admin = createAdminClient();
-  const ext   = file.name.split(".").pop() ?? "jpg";
-  const path  = `categories/${categoryId}/cover.${ext}`;
-  const { error } = await admin.storage
-    .from("category-images")
-    .upload(path, file, { contentType: file.type, upsert: true });
-  if (error) {
-    // Try fallback to category-covers bucket if category-images has an issue
-    const fb = await admin.storage
-      .from("category-covers")
-      .upload(path, file, { contentType: file.type, upsert: true });
-    if (fb.error) throw new Error(`Cover upload failed: ${error.message}`);
-    const { data } = admin.storage.from("category-covers").getPublicUrl(path);
-    return data.publicUrl;
+  if (!file.type.startsWith("image/")) {
+    throw new Error("That file isn't an image");
   }
-  const { data } = admin.storage.from("category-images").getPublicUrl(path);
+  if (file.size > MAX_COVER_UPLOAD_BYTES) {
+    throw new Error("Image is too large (max 20MB)");
+  }
+
+  // Never trust the client's Content-Type/filename for what gets stored —
+  // re-encode through sharp so only a real, decoded image (as WebP, with
+  // EXIF/GPS metadata stripped) ever reaches public Storage.
+  let processed: Buffer;
+  try {
+    processed = await processCoverImage(Buffer.from(await file.arrayBuffer()));
+  } catch {
+    throw new Error("Could not process this image — is it a valid photo?");
+  }
+
+  const admin = createAdminClient();
+  const path  = `categories/${categoryId}/cover.webp`;
+  const { error } = await admin.storage
+    .from(STORAGE.categoryCovers)
+    .upload(path, processed, { contentType: "image/webp", upsert: true });
+  if (error) throw new Error(`Cover upload failed: ${error.message}`);
+
+  const { data } = admin.storage.from(STORAGE.categoryCovers).getPublicUrl(path);
   return data.publicUrl;
 }
 

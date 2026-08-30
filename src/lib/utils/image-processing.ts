@@ -47,3 +47,22 @@ async function encodeUnderBudget(pipeline: ReturnType<typeof sharp>, maxBytes: n
   // Already at the lowest usable quality — return the smallest we managed.
   return smallest!;
 }
+
+const COVER_MAX_PX      = 1600;
+const COVER_BYTE_BUDGET = 400 * 1024;
+
+/**
+ * Same treatment as processGarmentImage, for a single-image upload (category
+ * covers): re-encodes whatever bytes were sent as a WebP through sharp,
+ * which both validates it's a real, decodable image (sharp throws on
+ * anything else — HTML, SVG script payloads, arbitrary binaries) and strips
+ * EXIF/ICC/GPS metadata. The caller never trusts the client-supplied
+ * filename extension or Content-Type for what actually gets stored.
+ */
+export async function processCoverImage(input: Buffer): Promise<Buffer> {
+  const oriented = sharp(input).rotate();
+  return encodeUnderBudget(
+    oriented.resize({ width: COVER_MAX_PX, height: COVER_MAX_PX, fit: "inside", withoutEnlargement: true }),
+    COVER_BYTE_BUDGET
+  );
+}
