@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SAROJ COUTURE - Admin Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Karla:ital,wght@0,200..800;1,200..800&amp;family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary-container": "#969187",
+                      "error-container": "#ffdad6",
+                      "on-tertiary-fixed": "#1e1b15",
+                      "on-surface": "#1c1c19",
+                      "inverse-primary": "#cdc5be",
+                      "on-secondary-container": "#794926",
+                      "primary-fixed": "#eae1d9",
+                      "tertiary": "#18160f",
+                      "outline": "#7d766e",
+                      "primary": "#191611",
+                      "on-background": "#1c1c19",
+                      "surface-container-lowest": "#ffffff",
+                      "primary-container": "#2e2a25",
+                      "tertiary-fixed-dim": "#ccc6bb",
+                      "surface-container-highest": "#e5e2dd",
+                      "surface-container": "#f0ede9",
+                      "secondary": "#85522f",
+                      "secondary-fixed-dim": "#fbb88d",
+                      "inverse-surface": "#31302d",
+                      "inverse-on-surface": "#f3f0eb",
+                      "on-surface-variant": "#4b463f",
+                      "surface-variant": "#e5e2dd",
+                      "secondary-container": "#febb8f",
+                      "on-error": "#ffffff",
+                      "surface-tint": "#635d57",
+                      "on-error-container": "#93000a",
+                      "surface-bright": "#fcf9f4",
+                      "on-secondary-fixed-variant": "#693b1a",
+                      "on-primary-fixed-variant": "#4b4640",
+                      "on-primary-fixed": "#1f1b16",
+                      "on-primary-container": "#97918a",
+                      "error": "#ba1a1a",
+                      "on-secondary": "#ffffff",
+                      "on-primary": "#ffffff",
+                      "outline-variant": "#cec5bc",
+                      "secondary-fixed": "#ffdcc7",
+                      "on-tertiary": "#ffffff",
+                      "tertiary-container": "#2d2a23",
+                      "surface-container-low": "#f6f3ee",
+                      "surface-container-high": "#ebe8e3",
+                      "primary-fixed-dim": "#cdc5be",
+                      "background": "#fcf9f4",
+                      "on-secondary-fixed": "#311300",
+                      "surface-dim": "#dcdad5",
+                      "tertiary-fixed": "#e8e2d7",
+                      "on-tertiary-fixed-variant": "#4a463f",
+                      "surface": "#fcf9f4",
+                      "dusty-beige": "#C9BBA8",
+                      "warm-ivory": "#FBF8F3",
+                      "clay-brown": "#85522f",
+                      "espresso": "#191611"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "margin-mobile": "20px",
+                      "section-gap": "120px",
+                      "gutter": "24px",
+                      "container-max": "1280px",
+                      "unit": "4px",
+                      "margin-desktop": "64px"
+              },
+              "fontFamily": {
+                      "headline-lg": [
+                              "Libre Caslon Text"
+                      ],
+                      "label-md": [
+                              "Karla"
+                      ],
+                      "label-lg": [
+                              "Karla"
+                      ],
+                      "headline-md": [
+                              "Libre Caslon Text"
+                      ],
+                      "body-lg": [
+                              "Karla"
+                      ],
+                      "body-sm": [
+                              "Karla"
+                      ],
+                      "headline-lg-mobile": [
+                              "Libre Caslon Text"
+                      ],
+                      "display-lg": [
+                              "Libre Caslon Text"
+                      ],
+                      "body-md": [
+                              "Karla"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "0.03em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.08em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "label-lg": [
+                              "14px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.1em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "letterSpacing": "0",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "28px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "0.03em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "letterSpacing": "0",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+            }
+          }
+        }
+      </script>
+</head>
+<body class="bg-warm-ivory h-full flex items-center justify-center p-margin-mobile">
+<div class="w-full max-w-[360px] bg-surface-container-lowest border border-dusty-beige p-8 rounded-DEFAULT flex flex-col items-center">
+<h1 class="font-headline-md text-headline-md text-espresso mb-12 tracking-widest text-center uppercase">SAROJ COUTURE</h1>
+<form class="w-full flex flex-col gap-8">
+<div class="relative w-full">
+<input class="peer w-full border-0 border-b border-dusty-beige bg-transparent py-2 px-0 text-body-md font-body-md text-espresso focus:ring-0 focus:border-espresso transition-colors placeholder-transparent" id="email" placeholder="Email" required="" type="email"/>
+<label class="absolute left-0 top-2 -z-10 origin-[0] -translate-y-6 scale-75 transform text-label-md font-label-md text-on-surface-variant duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-espresso uppercase tracking-widest" for="email">Email</label>
+</div>
+<div class="relative w-full">
+<input class="peer w-full border-0 border-b border-dusty-beige bg-transparent py-2 px-0 text-body-md font-body-md text-espresso focus:ring-0 focus:border-espresso transition-colors placeholder-transparent" id="password" placeholder="Password" required="" type="password"/>
+<label class="absolute left-0 top-2 -z-10 origin-[0] -translate-y-6 scale-75 transform text-label-md font-label-md text-on-surface-variant duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-espresso uppercase tracking-widest" for="password">Password</label>
+</div>
+<div class="mt-4 w-full">
+<button class="w-full bg-clay-brown text-on-primary py-4 px-6 rounded-DEFAULT font-label-lg text-label-lg uppercase tracking-[0.1em] hover:opacity-90 transition-opacity" type="submit">
+                    Sign in
+                </button>
+</div>
+<div class="text-center w-full mt-2">
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-espresso transition-colors" href="#">Forgot password</a>
+</div>
+</form>
+</div>
+</body></html>

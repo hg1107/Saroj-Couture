@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Saroj Couture - Category Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&amp;family=Karla:ital,wght@0,200..800;1,200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style type="text/tailwindcss">
+        @layer utilities {
+            .no-scrollbar::-webkit-scrollbar {
+                display: none;
+            }
+            .no-scrollbar {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-container": "#969187",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#1e1b15",
+                        "on-surface": "#1c1c19",
+                        "inverse-primary": "#cdc5be",
+                        "on-secondary-container": "#794926",
+                        "primary-fixed": "#eae1d9",
+                        "tertiary": "#18160f",
+                        "outline": "#7d766e",
+                        "primary": "#191611",
+                        "on-background": "#1c1c19",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#2e2a25",
+                        "tertiary-fixed-dim": "#ccc6bb",
+                        "surface-container-highest": "#e5e2dd",
+                        "surface-container": "#f0ede9",
+                        "secondary": "#85522f",
+                        "secondary-fixed-dim": "#fbb88d",
+                        "inverse-surface": "#31302d",
+                        "inverse-on-surface": "#f3f0eb",
+                        "on-surface-variant": "#4b463f",
+                        "surface-variant": "#e5e2dd",
+                        "secondary-container": "#febb8f",
+                        "on-error": "#ffffff",
+                        "surface-tint": "#635d57",
+                        "on-error-container": "#93000a",
+                        "surface-bright": "#fcf9f4",
+                        "on-secondary-fixed-variant": "#693b1a",
+                        "on-primary-fixed-variant": "#4b4640",
+                        "on-primary-fixed": "#1f1b16",
+                        "on-primary-container": "#97918a",
+                        "error": "#ba1a1a",
+                        "on-secondary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "outline-variant": "#cec5bc",
+                        "secondary-fixed": "#ffdcc7",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-container": "#2d2a23",
+                        "surface-container-low": "#f6f3ee",
+                        "surface-container-high": "#ebe8e3",
+                        "primary-fixed-dim": "#cdc5be",
+                        "background": "#fcf9f4",
+                        "on-secondary-fixed": "#311300",
+                        "surface-dim": "#dcdad5",
+                        "tertiary-fixed": "#e8e2d7",
+                        "on-tertiary-fixed-variant": "#4a463f",
+                        "surface": "#fcf9f4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-mobile": "20px",
+                        "section-gap": "120px",
+                        "gutter": "24px",
+                        "container-max": "1280px",
+                        "unit": "4px",
+                        "margin-desktop": "64px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Libre Caslon Text"],
+                        "label-md": ["Karla"],
+                        "label-lg": ["Karla"],
+                        "headline-md": ["Libre Caslon Text"],
+                        "body-lg": ["Karla"],
+                        "body-sm": ["Karla"],
+                        "headline-lg-mobile": ["Libre Caslon Text"],
+                        "display-lg": ["Libre Caslon Text"],
+                        "body-md": ["Karla"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "0.03em", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "1", "letterSpacing": "0.08em", "fontWeight": "500" }],
+                        "label-lg": ["14px", { "lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "letterSpacing": "0.02em", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400" }],
+                        "body-sm": ["14px", { "lineHeight": "1.5", "letterSpacing": "0.01em", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "1.2", "letterSpacing": "0.03em", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "0.05em", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen relative font-body-md md:hidden">
+<!-- Top Navigation Placeholder (Since no nav shell requested, simple header for context) -->
+<header class="fixed top-0 left-0 w-full z-40 bg-surface-container-lowest/80 backdrop-blur-md border-b border-outline-variant px-margin-mobile h-16 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface">arrow_back</span>
+<h1 class="font-headline-md text-headline-md text-primary tracking-widest uppercase">Categories</h1>
+</div>
+<span class="material-symbols-outlined text-on-surface">search</span>
+</header>
+<!-- Main Content -->
+<main class="pt-[80px] pb-[100px] px-margin-mobile">
+<div class="mb-8">
+<p class="font-body-sm text-body-sm text-on-surface-variant">Organize your collections. Drag to reorder.</p>
+</div>
+<!-- Category List -->
+<ul class="flex flex-col border-t border-outline-variant">
+<!-- List Item 1 -->
+<li class="flex items-center justify-between py-4 border-b border-outline-variant bg-surface-container-lowest">
+<div class="flex items-center gap-4 flex-1">
+<span class="material-symbols-outlined text-outline cursor-grab">drag_indicator</span>
+<div class="w-12 h-12 rounded bg-surface-variant border border-outline-variant overflow-hidden shrink-0">
+<img class="w-full h-full object-cover" data-alt="A close-up studio shot of luxurious embroidered fabric, featuring intricate gold threadwork on dark velvet. The lighting is soft and directional, highlighting the tactile texture of the haute couture material. Warm ivory and deep espresso tones dominate the refined, high-end editorial aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDIpqCBoZm51FC9r0Wnd60lKkdo3YcGLLBu57WsVEzpcqMnrF9kbGevGhjLpOtnLCj4HbEPjMa8xKJADuDUPI5wMqxwCcCSxhhE7uSNTsgMLmxZPl_vg1oyWqKQGXc6WvCdC1l6xg4CwLKvkcxEQlOsvikY9ngXaMAAKJkTC2UwX86dEF42a03giKKoap9WKlQOnI8QJBdX-LyqNtk39_M86gpWck-fp5YDw-iq6DrllHiuqAKGSiA"/>
+</div>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-on-surface">Evening Wear</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">12 pieces</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-outline cursor-pointer hover:text-primary transition-colors">visibility</span>
+<span class="material-symbols-outlined text-on-surface cursor-pointer">more_vert</span>
+</div>
+</li>
+<!-- List Item 2 -->
+<li class="flex items-center justify-between py-4 border-b border-outline-variant bg-surface-container-lowest">
+<div class="flex items-center gap-4 flex-1">
+<span class="material-symbols-outlined text-outline cursor-grab">drag_indicator</span>
+<div class="w-12 h-12 rounded bg-surface-variant border border-outline-variant overflow-hidden shrink-0">
+<img class="w-full h-full object-cover" data-alt="A detailed macro photograph of delicate bridal lace, showcasing intricate floral patterns woven with fine silk threads. Set against a pure white background with subtle warm lighting, evoking a sense of pristine elegance and bespoke craftsmanship typical of high-end tailoring." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAV-isNjACrKXYhjaKDED2ttcNuCwXHn-Magj49xiTdV2QL-FN8ktmYNmdS-0iX5xsmiBt85fgNoc1N3m8TxVR_D9NqmsX5wPY0Z_rcWkMKT1iJTch1V_gIxhbm3a66nm3Tiyw4CTEYQd31gEVE3WQX8ssH2j1XQBOc9-2bWVAFrRdz9P2Z7SLC38jRMZlkc7cFvcvTNU8THkwcoNHA6PqexkI1AQvB1dEhMiLMwtPgS-g_J7jSq9sx"/>
+</div>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-on-surface">Bridal Collection</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">8 pieces</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-outline cursor-pointer hover:text-primary transition-colors">visibility</span>
+<span class="material-symbols-outlined text-on-surface cursor-pointer">more_vert</span>
+</div>
+</li>
+<!-- List Item 3 (Hidden/Draft state example) -->
+<li class="flex items-center justify-between py-4 border-b border-outline-variant bg-surface-container-low opacity-75">
+<div class="flex items-center gap-4 flex-1">
+<span class="material-symbols-outlined text-outline cursor-grab">drag_indicator</span>
+<div class="w-12 h-12 rounded bg-surface-variant border border-outline-variant overflow-hidden shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-outline">image</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-on-surface">Autumn 24</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">0 pieces</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-outline cursor-pointer hover:text-primary transition-colors">visibility_off</span>
+<span class="material-symbols-outlined text-on-surface cursor-pointer">more_vert</span>
+</div>
+</li>
+</ul>
+<!-- Add Category Button -->
+<div class="mt-8">
+<button class="flex items-center gap-2 font-label-lg text-label-lg text-secondary uppercase tracking-widest hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined">add</span>
+                Add category
+            </button>
+</div>
+</main>
+<!-- Overlay Modal - Delete Confirmation -->
+<div class="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-scrim/40 backdrop-blur-sm p-margin-mobile">
+<div class="bg-surface-container-lowest w-full max-w-sm rounded-lg border border-outline-variant flex flex-col p-6 animate-[slideUp_0.3s_ease-out]">
+<h2 class="font-headline-md text-headline-md text-primary mb-2">Delete category?</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6">
+                Are you sure you want to delete this category? Any pieces currently assigned here will be moved to 'Uncategorised'.
+            </p>
+<div class="flex flex-col gap-3">
+<button class="w-full py-3 bg-error text-on-error font-label-lg text-label-lg uppercase tracking-widest rounded transition-opacity hover:opacity-90">
+                    Delete
+                </button>
+<button class="w-full py-3 border border-outline-variant text-on-surface font-label-lg text-label-lg uppercase tracking-widest rounded transition-colors hover:bg-surface-variant">
+                    Cancel
+                </button>
+</div>
+</div>
+</div>
+<!-- Inline styles for simplistic animations -->
+<style>
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</body></html>

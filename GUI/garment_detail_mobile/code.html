@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Saroj Couture - Garment Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Karla:ital,wght@0,200..800;1,200..800&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Karla:wght@100..900&family=Libre+Caslon+Text:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-container": "#969187",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#1e1b15",
+                        "on-surface": "#1c1c19",
+                        "inverse-primary": "#cdc5be",
+                        "on-secondary-container": "#794926",
+                        "primary-fixed": "#eae1d9",
+                        "tertiary": "#18160f",
+                        "outline": "#7d766e",
+                        "primary": "#191611",
+                        "on-background": "#1c1c19",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#2e2a25",
+                        "tertiary-fixed-dim": "#ccc6bb",
+                        "surface-container-highest": "#e5e2dd",
+                        "surface-container": "#f0ede9",
+                        "secondary": "#85522f",
+                        "secondary-fixed-dim": "#fbb88d",
+                        "inverse-surface": "#31302d",
+                        "inverse-on-surface": "#f3f0eb",
+                        "on-surface-variant": "#4b463f",
+                        "surface-variant": "#e5e2dd",
+                        "secondary-container": "#febb8f",
+                        "on-error": "#ffffff",
+                        "surface-tint": "#635d57",
+                        "on-error-container": "#93000a",
+                        "surface-bright": "#fcf9f4",
+                        "on-secondary-fixed-variant": "#693b1a",
+                        "on-primary-fixed-variant": "#4b4640",
+                        "on-primary-fixed": "#1f1b16",
+                        "on-primary-container": "#97918a",
+                        "error": "#ba1a1a",
+                        "on-secondary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "outline-variant": "#cec5bc",
+                        "secondary-fixed": "#ffdcc7",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-container": "#2d2a23",
+                        "surface-container-low": "#f6f3ee",
+                        "surface-container-high": "#ebe8e3",
+                        "primary-fixed-dim": "#cdc5be",
+                        "background": "#fcf9f4",
+                        "on-secondary-fixed": "#311300",
+                        "surface-dim": "#dcdad5",
+                        "tertiary-fixed": "#e8e2d7",
+                        "on-tertiary-fixed-variant": "#4a463f",
+                        "surface": "#fcf9f4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-mobile": "20px",
+                        "section-gap": "120px",
+                        "gutter": "24px",
+                        "container-max": "1280px",
+                        "unit": "4px",
+                        "margin-desktop": "64px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Libre Caslon Text"],
+                        "label-md": ["Karla"],
+                        "label-lg": ["Karla"],
+                        "headline-md": ["Libre Caslon Text"],
+                        "body-lg": ["Karla"],
+                        "body-sm": ["Karla"],
+                        "headline-lg-mobile": ["Libre Caslon Text"],
+                        "display-lg": ["Libre Caslon Text"],
+                        "body-md": ["Karla"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "0.03em", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "1", "letterSpacing": "0.08em", "fontWeight": "500" }],
+                        "label-lg": ["14px", { "lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "letterSpacing": "0.02em", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400" }],
+                        "body-sm": ["14px", { "lineHeight": "1.5", "letterSpacing": "0.01em", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "1.2", "letterSpacing": "0.03em", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "0.05em", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #fcf9f4; /* Warm Ivory background mapping to background token */
+        }
+        /* Custom scrollbar for horizontal scroller to be invisible */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface antialiased flex flex-col min-h-screen">
+<!-- Header -->
+<header class="fixed top-0 left-0 w-full z-50 flex flex-row-reverse justify-between items-center px-margin-mobile h-16 bg-background border-b border-outline-variant flat no shadows">
+<a class="font-headline-md text-headline-md text-primary tracking-widest uppercase" href="#">SAROJ COUTURE</a>
+<button aria-label="Go back" class="p-2 hover:opacity-80 transition-opacity active:scale-95 duration-150">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="flex-grow pt-16 pb-24 px-margin-mobile flex flex-col gap-8 md:hidden"> <!-- Mobile only view as per prompt, hidden md:flex would hide it on desktop, but we'll focus on mobile structure -->
+<!-- Image Carousel (Placeholder logic) -->
+<section class="w-full relative aspect-[3/4] overflow-hidden rounded-DEFAULT border border-outline-variant bg-surface-container-lowest">
+<img class="w-full h-full object-cover" data-alt="A detailed, high-fashion portrait shot of a bespoke, luxurious garment in soft, natural lighting. The garment is meticulously tailored, showing fine textures and craftsmanship. Set against a warm, neutral, gallery-like background. The overall aesthetic is editorial minimalism and quiet luxury, focusing on tactile precision." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-T-5muvZsvzJ9vgMD0eoJlT8p7Z6nSRQT_C19YBQV_brMmt_NDj5keRoJyJYarvKpikKQjcytylYtqFw_iRNKmY9LpKdzbzHv2GVLFJjvTtAUjjOqt5ov-U6dhzLKqAEWctecHzWpx3X7Bav0R2LWkE96bGHTsJnUCJUIeIPMOSxlXA87gAUYDZay_c6PScnQPGA9zz5zk65kGqPBIjJMpir2ydoq88BrYwQOFJ19zU0RRyf7XxdI"/>
+<!-- Dot Indicators -->
+<div class="absolute bottom-4 w-full flex justify-center gap-2">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<div class="w-2 h-2 rounded-full bg-outline-variant"></div>
+<div class="w-2 h-2 rounded-full bg-outline-variant"></div>
+</div>
+</section>
+<!-- Garment Details -->
+<section class="flex flex-col gap-4">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary">Silk Georgette Gown</h1>
+<p class="font-body-lg text-body-lg text-secondary">$1,250</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-4">
+                Exquisitely draped silk georgette gown featuring hand-pleated details and a flowing silhouette. Crafted for timeless elegance, this piece offers a delicate balance of structure and fluidity, ideal for evening affairs. The warm ivory tone enhances its quiet luxury appeal.
+            </p>
+</section>
+<!-- Detail Table -->
+<section class="flex flex-col border-t border-b border-outline-variant py-4">
+<div class="flex justify-between py-2 border-b border-outline-variant last:border-b-0">
+<span class="font-label-lg text-label-lg text-on-surface-variant">Fabric</span>
+<span class="font-body-md text-body-md text-primary">100% Silk Georgette</span>
+</div>
+<div class="flex justify-between py-2">
+<span class="font-label-lg text-label-lg text-on-surface-variant">Category</span>
+<span class="font-body-md text-body-md text-primary">Evening Wear</span>
+</div>
+</section>
+<!-- Action Button -->
+<section>
+<button class="w-full bg-secondary text-on-secondary font-label-lg text-label-lg uppercase tracking-widest py-4 rounded-DEFAULT flex items-center justify-center gap-2 hover:opacity-80 transition-opacity">
+<span>Enquire on WhatsApp</span>
+<span class="material-symbols-outlined" data-weight="fill" style="font-variation-settings: 'FILL' 1;">chat</span>
+</button>
+</section>
+<!-- Text Links -->
+<section class="flex justify-center gap-6 py-4">
+<a class="font-label-md text-label-md text-primary hover:text-secondary uppercase tracking-widest border-b border-transparent hover:border-secondary transition-colors" href="#">Call</a>
+<a class="font-label-md text-label-md text-primary hover:text-secondary uppercase tracking-widest border-b border-transparent hover:border-secondary transition-colors" href="#">Email</a>
+<a class="font-label-md text-label-md text-primary hover:text-secondary uppercase tracking-widest border-b border-transparent hover:border-secondary transition-colors" href="#">Instagram</a>
+</section>
+<!-- Horizontal Scroller -->
+<section class="flex flex-col gap-4 pt-8 border-t border-outline-variant">
+<h2 class="font-headline-md text-headline-md text-primary text-center">More from this category</h2>
+<div class="flex overflow-x-auto gap-4 pb-4 no-scrollbar -mx-margin-mobile px-margin-mobile">
+<!-- Thumbnail 1 -->
+<div class="min-w-[160px] aspect-[3/4] border border-outline-variant rounded-DEFAULT overflow-hidden bg-surface-container-lowest">
+<img class="w-full h-full object-cover" data-alt="A 3/4 portrait thumbnail of a luxurious silk evening gown, showcasing intricate tailoring details in soft, warm lighting. Editorial style, quiet luxury aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAm0okR3TuykZ6nHHADAlXmlJ0KjxQutrRegT5fG12b5abH1Z021bjsgE0Plg7s4f7DFoJOOJ1WnFQcZLpC67z02NdOiwQumCUr7dOuafOPzQDP-RijchCtsouZMB_Oqp7VoszgNF8ubm0mWH7s48HCUa8kQGTja80LSEAJIcFuNSBPY2_GtIs99Naq3eIl0QmQT-R0LX_5gt_y-IvfChY9tSuBXo4dusWs3t2cGS4ltwi-5qrEbGY"/>
+</div>
+<!-- Thumbnail 2 -->
+<div class="min-w-[160px] aspect-[3/4] border border-outline-variant rounded-DEFAULT overflow-hidden bg-surface-container-lowest">
+<img class="w-full h-full object-cover" data-alt="A 3/4 portrait thumbnail of an elegant bespoke jacket, highlighting premium fabric textures in soft, gallery-like lighting. Minimalist editorial style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAFD9NTW3wEx-B3exW4vPb12LSEtP-LKzzPWQm_xXFVstFZYp1hVmmu2uXS_vnxjQ9a-TC_dBCmOQL7_jpeIO1jeLgdIg8m1QfM0XRQJrDSsvjom_ajvYvTjrMUfBHdiDr9mXA2855sLCl_bP79wR7d6xTqlcV5IqdqUNW_0BUJ42ZENNcxxqVkDUzfqVvfdE7B0kb7MzXS-ytIDbuSea2S6W7P8wd2MRp3t07GfsYGWkD5nljOkTrp"/>
+</div>
+<!-- Thumbnail 3 -->
+<div class="min-w-[160px] aspect-[3/4] border border-outline-variant rounded-DEFAULT overflow-hidden bg-surface-container-lowest">
+<img class="w-full h-full object-cover" data-alt="A 3/4 portrait thumbnail of a finely crafted evening dress, focusing on delicate pleating and draping in warm ivory light. High-end fashion editorial aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYD-ZjaEu0zxQ1HETHndixNvSSmjdcswAKoxZwSKZcjQmBdahOOmpzf1uCawsDgnxjap1ITxNvvxRsi-pLnwbqCOOm5WLbTh7boBGXRQaf4-N8N2c0UkWrQk4v1huoppvc008xMMd7z32Ab57jMJQH_f6KiTXDiVJjR4C7Fag_GkrO4wyjzwvHf5l-k0v4wlxf4keuingCQTyO-Tcj10x4P35nkg-br8Bk4bjcRwysTQ8twZZBNFb4"/>
+</div>
+<!-- Thumbnail 4 -->
+<div class="min-w-[160px] aspect-[3/4] border border-outline-variant rounded-DEFAULT overflow-hidden bg-surface-container-lowest">
+<img class="w-full h-full object-cover" data-alt="A 3/4 portrait thumbnail of a tailored skirt piece, showing tactile precision and muted clay tones in soft studio lighting. Quiet luxury fashion presentation." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCNM8Hh2mnngOhvmrxqPNyodNMozfvV9tQjwC6lg5VH_CVTqVK0_unJQQL0FCP0Bbj0xx0Pw_Y9Sm2REr36ne_TnmQuU2CnZZQMnN5V_f-awq-hEFSJA3Fo2e1BwVHF99V6APE7Mga1IizxIaYoMoNiVrvNI-aV3VOROjPTuUa28nebDHTmgyqB6UYfn9FBrHkrhVXEuLyp1vryq8AjIncx_T2So0xqVegS2IgKIZ4xKjottOxpxlUi"/>
+</div>
+</div>
+</section>
+</main>
+<!-- Floating WhatsApp Button (Contextual for this specific item inquiry) -->
+<a aria-label="WhatsApp Inquiry" class="fixed bottom-6 right-6 w-14 h-14 bg-secondary text-on-secondary rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform z-50 md:hidden" href="#">
+<span class="material-symbols-outlined text-[32px]" data-weight="fill" style="font-variation-settings: 'FILL' 1;">chat</span>
+</a>
+<!-- Footer Component from JSON injected here if needed, but requested to prioritize canvas on transactional/detail view. We'll omit standard footer to match 'task-focused/details' mandate to suppress shell where irrelevant, but user asked for detail page specific layout. -->
+</body></html>
