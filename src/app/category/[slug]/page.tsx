@@ -99,7 +99,7 @@ export default async function CategoryPage({ params }: Props) {
             No pieces in this category yet.
           </p>
         ) : (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-10">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-6">
             {garments.map((garment) => {
               const coverImg = garment.images.find((i) => i.display_order === 0)
                 ?? garment.images[0];
@@ -107,27 +107,28 @@ export default async function CategoryPage({ params }: Props) {
                 <Link
                   key={garment.id}
                   href={`/garment/${garment.slug}`}
-                  className="flex flex-col group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary rounded"
+                  className="flex flex-col group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary rounded max-w-[280px] w-full"
                 >
-                  <div className="w-full aspect-[3/4] bg-surface-container-high rounded border border-outline-variant overflow-hidden mb-3 p-1">
+                  <div className="w-full aspect-[3/4] bg-surface-container-high rounded-sm border border-outline-variant overflow-hidden mb-3 p-1 group-hover:border-secondary transition-colors">
                     {coverImg ? (
                       <Image
                         src={coverImg.url}
                         alt={coverImg.alt_text ?? defaultImageAlt(garment.title, category.name)}
-                        width={200}
-                        height={267}
-                        className="w-full h-full object-cover rounded-sm transition-transform duration-700 group-hover:scale-105"
+                        width={280}
+                        height={373}
+                        className="w-full h-full object-cover rounded-xs transition-transform duration-700 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="w-full h-full bg-surface-container-highest flex items-center justify-center rounded-sm">
-                        <span className="material-symbols-outlined text-outline" aria-hidden="true">image</span>
+                      <div className="w-full h-full bg-surface-container-highest flex flex-col items-center justify-center gap-2 rounded-xs p-4">
+                        <span className="material-symbols-outlined text-outline text-3xl" aria-hidden="true">image</span>
+                        <span className="font-label-md text-[11px] text-outline uppercase tracking-wider text-center">Bespoke Piece</span>
                       </div>
                     )}
                   </div>
-                  <h3 className="font-label-lg text-label-lg text-primary uppercase tracking-widest mb-1">
+                  <h3 className="font-serif text-lg text-primary group-hover:text-secondary uppercase tracking-wider mb-1 transition-colors">
                     {garment.title}
                   </h3>
-                  <p className="font-label-md text-label-md text-outline">
+                  <p className="font-sans text-sm text-outline font-medium">
                     {formatPrice(garment.price, garment.price_type)}
                   </p>
                 </Link>

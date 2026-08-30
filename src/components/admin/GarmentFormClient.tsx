@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useActionState } from "react";
+import { useState, useEffect, useTransition, useActionState } from "react";
 import { useRouter } from "next/navigation";
 import type { Category, GarmentWithImages, PriceType } from "@/lib/supabase/types";
 import { createGarment, updateGarment, type GarmentFormState } from "@/lib/actions/garments";
@@ -36,8 +36,6 @@ export default function GarmentFormClient({ categories, garment }: Props) {
   // garment-scoped Storage path before the garment row itself exists.
   const [garmentId] = useState(() => garment?.id ?? crypto.randomUUID());
 
-  const [, startRedirectTransition] = useTransition();
-
   // Server Action binding
   const action = isEdit
     ? updateGarment.bind(null, garment!.id)
@@ -48,6 +46,13 @@ export default function GarmentFormClient({ categories, garment }: Props) {
   function goToList() {
     router.push("/admin/garments");
   }
+
+  // ── Success redirect ─────────────────────────────────────────────────────
+  useEffect(() => {
+    if (state?.success) {
+      router.push("/admin/garments");
+    }
+  }, [state?.success, router]);
 
   // ── Inline category creation ─────────────────────────────────────────────
   function handleCreateCategory() {
@@ -77,11 +82,6 @@ export default function GarmentFormClient({ categories, garment }: Props) {
       setNewCategoryName("");
       setShowNewCategory(false);
     });
-  }
-
-  // ── Success redirect ─────────────────────────────────────────────────────
-  if (state?.success) {
-    startRedirectTransition(() => router.push("/admin/garments"));
   }
 
   return (

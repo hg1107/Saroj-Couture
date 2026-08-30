@@ -67,9 +67,9 @@ export default async function GarmentDetailPage({ params }: Props) {
       />
       <SiteHeader categories={categories} />
 
-      <main className="flex-grow pt-16 pb-24 px-margin-mobile flex flex-col gap-8">
+      <main className="flex-grow pt-20 pb-24 px-margin-mobile md:px-margin-desktop max-w-5xl mx-auto w-full flex flex-col gap-10">
         {/* ── Back navigation ───────────────────────────────────────────── */}
-        <div className="flex items-center gap-2 pt-4">
+        <div className="flex items-center gap-2 pt-2">
           <Link
             href={categorySlug ? `/category/${categorySlug}` : "/"}
             aria-label="Go back"
@@ -84,91 +84,98 @@ export default async function GarmentDetailPage({ params }: Props) {
           )}
         </div>
 
-        {/* ── Image Carousel ────────────────────────────────────────────── */}
-        <GarmentImageCarousel
-          images={garment.images}
-          garmentTitle={garment.title}
-          categoryName={garment.categories?.name}
-        />
+        {/* ── Product Display (2 columns on tablet/desktop, stacked on mobile) ── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start">
+          {/* Left Column: Image Gallery */}
+          <div className="w-full flex justify-center">
+            <GarmentImageCarousel
+              images={garment.images}
+              garmentTitle={garment.title}
+              categoryName={garment.categories?.name}
+            />
+          </div>
 
-        {/* ── Garment Details ───────────────────────────────────────────── */}
-        <section className="flex flex-col gap-4">
-          <h1 className="font-headline-lg-mobile text-headline-lg-mobile text-primary">
-            {garment.title}
-          </h1>
-          <p className="font-body-lg text-body-lg text-secondary">
-            {formatPrice(garment.price, garment.price_type)}
-          </p>
-          {garment.description && (
-            <p className="font-body-sm text-body-sm text-on-surface-variant">
-              {garment.description}
-            </p>
-          )}
-        </section>
-
-        {/* ── Detail Table ──────────────────────────────────────────────── */}
-        <section
-          aria-label="Garment details"
-          className="flex flex-col border-t border-b border-outline-variant py-4"
-        >
-          {garment.fabric && (
-            <div className="flex justify-between py-2 border-b border-outline-variant">
-              <span className="font-label-lg text-label-lg text-on-surface-variant">Fabric</span>
-              <span className="font-body-md text-body-md text-primary">{garment.fabric}</span>
+          {/* Right Column: Details & Actions */}
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-2">
+              <h1 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary font-serif">
+                {garment.title}
+              </h1>
+              <p className="font-body-lg text-body-lg text-secondary font-medium">
+                {formatPrice(garment.price, garment.price_type)}
+              </p>
+              {garment.description && (
+                <p className="font-body-md text-body-md text-on-surface-variant mt-2 leading-relaxed whitespace-pre-line">
+                  {garment.description}
+                </p>
+              )}
             </div>
-          )}
-          {garment.categories && (
-            <div className="flex justify-between py-2">
-              <span className="font-label-lg text-label-lg text-on-surface-variant">Category</span>
-              <span className="font-body-md text-body-md text-primary">{garment.categories.name}</span>
-            </div>
-          )}
-        </section>
 
-        {/* ── CTA — WhatsApp Enquiry ────────────────────────────────────── */}
-        <section>
-          <a
-            href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? ""}?text=${encodeURIComponent(whatsappMsg)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full bg-secondary text-on-secondary font-label-lg text-label-lg uppercase tracking-widest py-4 rounded-sm flex items-center justify-center gap-2 hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-secondary"
-          >
-            <span>Enquire on WhatsApp</span>
-            <span className="material-symbols-outlined" aria-hidden="true">chat</span>
-          </a>
-        </section>
+            {/* Detail Table */}
+            <section
+              aria-label="Garment details"
+              className="flex flex-col border-t border-b border-outline-variant py-4 my-2"
+            >
+              {garment.fabric && (
+                <div className="flex justify-between py-2.5 border-b border-outline-variant">
+                  <span className="font-label-lg text-label-lg text-on-surface-variant">Fabric</span>
+                  <span className="font-body-md text-body-md text-primary font-medium">{garment.fabric}</span>
+                </div>
+              )}
+              {garment.categories && (
+                <div className="flex justify-between py-2.5">
+                  <span className="font-label-lg text-label-lg text-on-surface-variant">Category</span>
+                  <span className="font-body-md text-body-md text-primary font-medium">{garment.categories.name}</span>
+                </div>
+              )}
+            </section>
 
-        {/* ── Contact Links ─────────────────────────────────────────────── */}
-        <section className="flex justify-center gap-6 py-4">
-          {process.env.NEXT_PUBLIC_PHONE_NUMBER && (
-            <a
-              href={`tel:${process.env.NEXT_PUBLIC_PHONE_NUMBER}`}
-              className="font-label-md text-label-md text-primary hover:text-secondary uppercase tracking-widest border-b border-transparent hover:border-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
-            >
-              Call
-            </a>
-          )}
-          {process.env.NEXT_PUBLIC_EMAIL && (
-            <a
-              href={`mailto:${process.env.NEXT_PUBLIC_EMAIL}`}
-              className="font-label-md text-label-md text-primary hover:text-secondary uppercase tracking-widest border-b border-transparent hover:border-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
-            >
-              Email
-            </a>
-          )}
-          {process.env.NEXT_PUBLIC_INSTAGRAM_URL && (
-            <a
-              href={process.env.NEXT_PUBLIC_INSTAGRAM_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-label-md text-label-md text-primary hover:text-secondary uppercase tracking-widest border-b border-transparent hover:border-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
-            >
-              Instagram
-            </a>
-          )}
-        </section>
+            {/* CTA — WhatsApp Enquiry */}
+            <section className="flex flex-col gap-3">
+              <a
+                href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? ""}?text=${encodeURIComponent(whatsappMsg)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-secondary text-on-secondary font-label-lg text-label-lg uppercase tracking-widest py-4 rounded-sm flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.99] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-secondary shadow-xs"
+              >
+                <span>Enquire on WhatsApp</span>
+                <span className="material-symbols-outlined text-xl" aria-hidden="true">chat</span>
+              </a>
+            </section>
 
-        {/* ── Related Garments ──────────────────────────────────────────── */}
+            {/* Contact Links */}
+            <section className="flex justify-start gap-8 py-2">
+              {process.env.NEXT_PUBLIC_PHONE_NUMBER && (
+                <a
+                  href={`tel:${process.env.NEXT_PUBLIC_PHONE_NUMBER}`}
+                  className="font-label-md text-label-md text-primary hover:text-secondary uppercase tracking-widest border-b border-transparent hover:border-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+                >
+                  Call
+                </a>
+              )}
+              {process.env.NEXT_PUBLIC_EMAIL && (
+                <a
+                  href={`mailto:${process.env.NEXT_PUBLIC_EMAIL}`}
+                  className="font-label-md text-label-md text-primary hover:text-secondary uppercase tracking-widest border-b border-transparent hover:border-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+                >
+                  Email
+                </a>
+              )}
+              {process.env.NEXT_PUBLIC_INSTAGRAM_URL && (
+                <a
+                  href={process.env.NEXT_PUBLIC_INSTAGRAM_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-label-md text-label-md text-primary hover:text-secondary uppercase tracking-widest border-b border-transparent hover:border-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+                >
+                  Instagram
+                </a>
+              )}
+            </section>
+          </div>
+        </div>
+
+        {/* ── Related Garments ──────────────────────────────────── */}
         {related.length > 0 && (
           <section className="flex flex-col gap-4 pt-8 border-t border-outline-variant">
             <h2 className="font-headline-md text-headline-md text-primary text-center">

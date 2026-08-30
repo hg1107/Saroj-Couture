@@ -41,6 +41,21 @@ export async function getFeaturedGarments(): Promise<GarmentListItem[]> {
 }
 
 /**
+ * Public: all published garments across all visible categories (for Gallery page).
+ */
+export async function getAllPublishedGarmentsWithImages(): Promise<GarmentListItem[]> {
+  const supabase = await createServerClient();
+  const { data, error } = await supabase
+    .from("garments")
+    .select(COVER_IMAGE_SELECT)
+    .eq("status", "published")
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(`getAllPublishedGarmentsWithImages: ${error.message}`);
+  return (data ?? []) as GarmentListItem[];
+}
+
+/**
  * Public: all published garments in a visible category (by category slug).
  */
 export async function getGarmentsByCategory(

@@ -21,7 +21,15 @@ async function uploadCoverImage(categoryId: string, file: File): Promise<string>
   const { error } = await admin.storage
     .from("category-images")
     .upload(path, file, { contentType: file.type, upsert: true });
-  if (error) throw new Error(`Cover upload failed: ${error.message}`);
+  if (error) {
+    // Try fallback to category-covers bucket if category-images has an issue
+    const fb = await admin.storage
+      .from("category-covers")
+      .upload(path, file, { contentType: file.type, upsert: true });
+    if (fb.error) throw new Error(`Cover upload failed: ${error.message}`);
+    const { data } = admin.storage.from("category-covers").getPublicUrl(path);
+    return data.publicUrl;
+  }
   const { data } = admin.storage.from("category-images").getPublicUrl(path);
   return data.publicUrl;
 }
@@ -80,8 +88,12 @@ async function applyCoverImage(supabase: AnySupabase, id: string | undefined, fo
   if (!id) return;
   const coverFile = formData.get("cover_image") as File | null;
   if (coverFile && coverFile.size > 0) {
-    const url = await uploadCoverImage(id, coverFile);
-    await supabase.from("categories").update({ cover_image_url: url }).eq("id", id);
+    try {
+      const url = await uploadCoverImage(id, coverFile);
+      await supabase.from("categories").update({ cover_image_url: url }).eq("id", id);
+    } catch (err) {
+      console.error("Cover image upload error:", err);
+    }
   }
 }
 
@@ -107,7 +119,12 @@ export async function updateCategory(
 
   const coverFile = formData.get("cover_image") as File | null;
   if (coverFile && coverFile.size > 0) {
-    updates.cover_image_url = await uploadCoverImage(id, coverFile);
+    try {
+      updates.cover_image_url = await uploadCoverImage(id, coverFile);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Cover upload failed.";
+      return { error: message };
+    }
   }
 
   if (Object.keys(updates).length === 0) return { success: true };
