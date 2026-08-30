@@ -17,26 +17,35 @@ async function db(): Promise<AnySupabase> {
 }
 
 // ─── Images ─────────────────────────────────────────────────────────────────
-// Placeholder for Phase 6: the form accepts already-uploaded image URLs
-// directly (pasted in by the owner) rather than handling file uploads here.
-// Each save replaces the garment's image rows with the submitted URL list.
+// Photos are uploaded (and processed into full + thumbnail WebP renditions)
+// server-side by /api/admin/garment-images as soon as they're picked in the
+// form — by the time the garment is saved, each already-uploaded image's id
+// (which doubles as its Storage path segment), full URL, and thumbnail URL
+// arrive as parallel hidden-field arrays, in the order the owner arranged
+// them (index 0 = cover). Each save replaces the garment's image rows with
+// that submitted set, reusing the same ids the Storage objects were written
+// under so a later edit can still resolve their paths (e.g. to delete them).
 
 async function saveGarmentImages(
   supabase: AnySupabase,
   garmentId: string,
   formData: FormData
 ): Promise<string | undefined> {
-  const urls = formData
-    .getAll("image_urls")
-    .map((v) => String(v).trim())
-    .filter(Boolean);
+  const ids          = formData.getAll("image_ids").map(String);
+  const urls         = formData.getAll("image_urls").map(String);
+  const thumbnailUrls = formData.getAll("image_thumbnail_urls").map(String);
 
   const { error: delError } = await supabase.from("images").delete().eq("garment_id", garmentId);
   if (delError) return delError.message;
-  if (urls.length === 0) return undefined;
+  if (ids.length === 0) return undefined;
 
-  const rows = urls.map((url, i) => ({
-    garment_id: garmentId, url, display_order: i, alt_text: null as string | null,
+  const rows = ids.map((id, i) => ({
+    id,
+    garment_id: garmentId,
+    url: urls[i],
+    thumbnail_url: thumbnailUrls[i],
+    display_order: i,
+    alt_text: null as string | null,
   }));
   const { error: insError } = await supabase.from("images").insert(rows);
   return insError?.message;
@@ -49,6 +58,7 @@ export async function createGarment(
   formData: FormData
 ): Promise<GarmentFormState> {
   const supabase    = await db();
+  const presetId    = String(formData.get("garment_id") ?? "") || undefined;
   const title       = String(formData.get("title") ?? "").trim();
   const categoryId  = String(formData.get("category_id") ?? "");
   const fabric      = String(formData.get("fabric") ?? "").trim() || null;
@@ -65,7 +75,9 @@ export async function createGarment(
     const { data } = await supabase.from("garments").select("id").eq("slug", candidate).maybeSingle();
     return !!data;
   });
-  const row = { title, slug, category_id: categoryId, fabric, description, price, price_type: priceType, is_featured: isFeatured, status };
+  // Reuse the id the browser pre-generated for the photo-upload Storage path
+  // (falls back to the DB default if it's somehow missing).
+  const row = { id: presetId, title, slug, category_id: categoryId, fabric, description, price, price_type: priceType, is_featured: isFeatured, status };
 
   const { data: garment, error } = await supabase
     .from("garments")

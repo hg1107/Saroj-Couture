@@ -3,7 +3,7 @@
  * Public queries rely on anon RLS: only published garments in visible categories.
  */
 import { createServerClient } from "@/lib/supabase/server";
-import type { GarmentWithCategory, GarmentWithImages, GarmentListItem } from "@/lib/supabase/types";
+import type { GarmentWithImages, GarmentListItem } from "@/lib/supabase/types";
 export { formatPrice } from "@/lib/utils/format";
 
 const COVER_IMAGE_SELECT = `
@@ -20,14 +20,14 @@ const COVER_IMAGE_SELECT = `
   created_at,
   updated_at,
   categories ( name, slug ),
-  images ( id, url, alt_text, display_order )
+  images ( id, url, thumbnail_url, alt_text, display_order )
 `.trim();
 
 /**
  * Public: featured garments (is_featured = true, published, visible category).
  * Returns garments with their cover image (display_order = 0).
  */
-export async function getFeaturedGarments(): Promise<GarmentWithCategory[]> {
+export async function getFeaturedGarments(): Promise<GarmentListItem[]> {
   const supabase = await createServerClient();
   const { data, error } = await supabase
     .from("garments")
@@ -37,7 +37,7 @@ export async function getFeaturedGarments(): Promise<GarmentWithCategory[]> {
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(`getFeaturedGarments: ${error.message}`);
-  return (data ?? []) as GarmentWithCategory[];
+  return (data ?? []) as GarmentListItem[];
 }
 
 /**
@@ -45,7 +45,7 @@ export async function getFeaturedGarments(): Promise<GarmentWithCategory[]> {
  */
 export async function getGarmentsByCategory(
   categorySlug: string
-): Promise<GarmentWithCategory[]> {
+): Promise<GarmentListItem[]> {
   const supabase = await createServerClient();
 
   // First resolve the category id from slug
@@ -67,7 +67,7 @@ export async function getGarmentsByCategory(
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(`getGarmentsByCategory: ${error.message}`);
-  return (data ?? []) as GarmentWithCategory[];
+  return (data ?? []) as GarmentListItem[];
 }
 
 /**
@@ -80,7 +80,7 @@ export async function getGarmentBySlug(slug: string): Promise<GarmentWithImages 
     .select(`
       *,
       categories ( name, slug ),
-      images ( id, url, alt_text, display_order )
+      images ( id, url, thumbnail_url, alt_text, display_order )
     `)
     .eq("slug", slug)
     .eq("status", "published")
@@ -132,7 +132,7 @@ export async function getGarmentByIdAdmin(id: string): Promise<GarmentWithImages
     .select(`
       *,
       categories ( name, slug ),
-      images ( id, url, alt_text, display_order )
+      images ( id, url, thumbnail_url, alt_text, display_order )
     `)
     .eq("id", id)
     .order("display_order", { referencedTable: "images", ascending: true })
@@ -145,4 +145,21 @@ export async function getGarmentByIdAdmin(id: string): Promise<GarmentWithImages
   return data as GarmentWithImages;
 }
 
+/**
+ * Public: slug + updated_at for every published garment — used to build the
+ * sitemap. Runs as anon, so RLS (`anon_select_published_garments`) also
+ * excludes any garment sitting in a hidden category, exactly like the public
+ * pages themselves.
+ */
+export async function getAllPublishedGarments(): Promise<{ slug: string; updated_at: string }[]> {
+  const supabase = await createServerClient();
+  const { data, error } = await supabase
+    .from("garments")
+    .select("slug, updated_at")
+    .eq("status", "published")
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(`getAllPublishedGarments: ${error.message}`);
+  return data ?? [];
+}
 

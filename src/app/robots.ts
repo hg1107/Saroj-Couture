@@ -1,14 +1,15 @@
 import type { MetadataRoute } from "next";
+import { SEO } from "@/lib/utils/constants";
 
-// Phase 5: reviewed and confirmed — disallow admin + auth crawling.
+// Static robots.txt — allows all crawlers, keeps the admin/auth/API surface
+// out of the index, and points at the dynamic sitemap.
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   return {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/admin/", "/auth/"],
+      disallow: ["/admin/", "/auth/", "/api/"],
     },
-    sitemap: `${baseUrl}/sitemap.xml`,
+    sitemap: `${SEO.siteUrl}/sitemap.xml`,
   };
 }

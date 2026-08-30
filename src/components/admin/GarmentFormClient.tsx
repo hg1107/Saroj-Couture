@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Category, GarmentWithImages, PriceType } from "@/lib/supabase/types";
 import { createGarment, updateGarment, type GarmentFormState } from "@/lib/actions/garments";
 import { createCategory } from "@/lib/actions/categories";
+import GarmentImageUploader from "@/components/admin/GarmentImageUploader";
 
 interface Props {
   categories: Category[];
@@ -13,16 +14,6 @@ interface Props {
 
 const initialState: GarmentFormState = {};
 const DESCRIPTION_MAX = 300;
-const MAX_IMAGES = 6;
-
-function isValidUrl(value: string): boolean {
-  try {
-    new URL(value);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 export default function GarmentFormClient({ categories, garment }: Props) {
   const router = useRouter();
@@ -40,13 +31,10 @@ export default function GarmentFormClient({ categories, garment }: Props) {
   const [newCategoryError, setNewCategoryError] = useState<string | undefined>();
   const [isCategoryPending, startCategoryTransition] = useTransition();
 
-  // Images — Phase 6 will add real uploads; for now the owner pastes in
-  // URLs of images already uploaded elsewhere (e.g. to Supabase Storage).
-  const [imageUrls, setImageUrls] = useState<string[]>(
-    (garment?.images ?? []).map((img) => img.url)
-  );
-  const [imageUrlInput, setImageUrlInput] = useState("");
-  const [imageUrlError, setImageUrlError] = useState<string | undefined>();
+  // Stable garment id: the real one when editing, or a freshly minted one
+  // for a new garment — needed up front so photo uploads have a
+  // garment-scoped Storage path before the garment row itself exists.
+  const [garmentId] = useState(() => garment?.id ?? crypto.randomUUID());
 
   const [, startRedirectTransition] = useTransition();
 
@@ -91,23 +79,6 @@ export default function GarmentFormClient({ categories, garment }: Props) {
     });
   }
 
-  // ── Image URL list ───────────────────────────────────────────────────────
-  function handleAddImageUrl() {
-    const url = imageUrlInput.trim();
-    if (!url) return;
-    if (!isValidUrl(url)) {
-      setImageUrlError("Enter a full URL, e.g. https://…");
-      return;
-    }
-    setImageUrls((prev) => [...prev, url]);
-    setImageUrlInput("");
-    setImageUrlError(undefined);
-  }
-
-  function removeImageUrl(index: number) {
-    setImageUrls((prev) => prev.filter((_, i) => i !== index));
-  }
-
   // ── Success redirect ─────────────────────────────────────────────────────
   if (state?.success) {
     startRedirectTransition(() => router.push("/admin/garments"));
@@ -131,83 +102,22 @@ export default function GarmentFormClient({ categories, garment }: Props) {
         <div className="w-10" aria-hidden />
       </div>
 
-      {/* ── Image URLs (placeholder — real upload UI lands in Phase 6) ────── */}
-      <section className="mb-10" aria-label="Garment images">
-        <label htmlFor="image_url_input" className="font-label-md text-label-md text-on-surface-variant mb-1 uppercase tracking-wider block">
-          Image URLs
-        </label>
-        <p className="font-body-sm text-body-sm text-on-surface-variant mb-3">
-          Paste the URL of an already-uploaded image. Direct upload is coming soon.
-        </p>
-
-        {imageUrls.length < MAX_IMAGES && (
-          <div className="flex gap-2">
-            <input
-              id="image_url_input"
-              type="url"
-              value={imageUrlInput}
-              onChange={(e) => { setImageUrlInput(e.target.value); setImageUrlError(undefined); }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") { e.preventDefault(); handleAddImageUrl(); }
-              }}
-              placeholder="https://…"
-              className="flex-grow border-0 border-b border-outline-variant bg-transparent py-2 font-body-md text-body-md text-primary placeholder-outline focus:ring-0 focus:border-primary transition-colors"
-            />
-            <button
-              type="button"
-              onClick={handleAddImageUrl}
-              className="px-4 py-2 border border-outline-variant rounded-sm font-label-md text-label-md uppercase tracking-wider text-primary hover:bg-surface-container-low transition-colors"
-            >
-              Add
-            </button>
-          </div>
-        )}
-        {imageUrlError && (
-          <p role="alert" className="font-body-sm text-body-sm text-error mt-1">{imageUrlError}</p>
-        )}
-
-        {/* Thumbnails */}
-        {imageUrls.length > 0 && (
-          <div className="flex gap-4 mt-4 overflow-x-auto pb-2 snap-x" role="list" aria-label="Selected images">
-            {imageUrls.map((url, i) => (
-              <div
-                key={`${url}-${i}`}
-                role="listitem"
-                className="relative w-24 h-24 shrink-0 snap-start bg-surface-container-lowest border border-outline-variant flex items-center justify-center rounded group overflow-hidden"
-              >
-                {/* Arbitrary pasted URLs aren't covered by next/image's remotePatterns allowlist */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={url}
-                  alt={i === 0 ? "Cover image" : `Image ${i + 1}`}
-                  className="w-full h-full object-cover"
-                />
-                <button
-                  type="button"
-                  aria-label={`Remove image ${i + 1}`}
-                  onClick={() => removeImageUrl(i)}
-                  className="absolute top-1 right-1 bg-black/50 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white"
-                >
-                  <span className="material-symbols-outlined text-xs" aria-hidden="true">close</span>
-                </button>
-                {i === 0 && (
-                  <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-surface-container text-on-surface font-label-md text-[10px] px-2 py-0.5 border border-outline-variant tracking-wider uppercase whitespace-nowrap">
-                    Cover
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Submitted with the form, in display order */}
-        {imageUrls.map((url, i) => (
-          <input key={`${url}-${i}`} type="hidden" name="image_urls" value={url} />
-        ))}
-      </section>
-
       {/* ── Form Fields ───────────────────────────────────────────────────── */}
       <form action={formAction} className="flex flex-col gap-8">
+        {/* Hidden field so createGarment can insert with this pre-generated id
+            (updateGarment ignores it — it's bound to the real id server-side) */}
+        <input type="hidden" name="garment_id" value={garmentId} />
+
+        {/* Photos — uploaded, processed, and stored server-side on selection */}
+        <GarmentImageUploader
+          garmentId={garmentId}
+          initialImages={(garment?.images ?? []).map((img) => ({
+            id: img.id,
+            url: img.url,
+            thumbnailUrl: img.thumbnail_url,
+          }))}
+        />
+
         {/* Title */}
         <div className="flex flex-col">
           <label htmlFor="title" className="font-label-md text-label-md text-on-surface-variant mb-1 uppercase tracking-wider">

@@ -3,15 +3,18 @@
 import { useState } from "react";
 import Image from "next/image";
 import type { GarmentImage } from "@/lib/supabase/types";
+import { defaultImageAlt } from "@/lib/utils/format";
 
 interface GarmentImageCarouselProps {
   images: GarmentImage[];
   garmentTitle: string;
+  categoryName?: string | null;
 }
 
 export default function GarmentImageCarousel({
   images,
   garmentTitle,
+  categoryName,
 }: GarmentImageCarouselProps) {
   const [current, setCurrent] = useState(0);
 
@@ -32,7 +35,7 @@ export default function GarmentImageCarousel({
     >
       <Image
         src={img.url}
-        alt={img.alt_text ?? `${garmentTitle} — image ${current + 1}`}
+        alt={img.alt_text ?? defaultImageAlt(garmentTitle, categoryName)}
         fill
         className="object-cover"
         priority={current === 0}

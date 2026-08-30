@@ -1,54 +1,49 @@
 /**
- * Client-side image processing pipeline.
- * PRD R5: EXIF strip + WebP conversion + resize before upload to Supabase Storage.
- *
- * Runs entirely in the browser using the Canvas API — no server compute cost.
- * Phase 3 task 3.1
+ * Server-side image processing pipeline for garment photos.
+ * Uses `sharp` (native Node module) — import this only from a Route Handler
+ * or other server-only code, never from a Client Component.
  */
+import sharp from "sharp";
 
-const FULL_MAX_PX = 1600;      // max dimension for full-size image
-const THUMB_MAX_PX = 400;      // max dimension for thumbnail
-const WEBP_QUALITY = 0.82;     // WebP quality (0–1)
+const FULL_MAX_PX      = 1200; // max dimension for the full-size image
+const THUMB_MAX_PX     = 400;  // max dimension for the thumbnail
+const FULL_BYTE_BUDGET = 300 * 1024; // ~300KB target for the full-size image
+const QUALITY_STEPS    = [80, 70, 60, 50, 40, 30] as const;
 
 export interface ProcessedImage {
-  /** Full-size WebP Blob (~<300KB for a 6MB phone photo) */
-  full: Blob;
-  /** Thumbnail WebP Blob */
-  thumbnail: Blob;
-  /** Original filename without extension, for use in Storage path */
-  baseName: string;
+  full: Buffer;
+  thumbnail: Buffer;
 }
 
 /**
- * Process a single image File:
- * - Strips EXIF (canvas re-draw removes all metadata including GPS)
- * - Resizes to fit within FULL_MAX_PX
- * - Converts to WebP
- * - Generates a thumbnail at THUMB_MAX_PX
+ * Auto-orients using the EXIF orientation tag, then re-encodes as WebP.
+ * sharp's output never carries EXIF/ICC/GPS metadata unless `.withMetadata()`
+ * is called — which it isn't here — so this strips all of it by construction.
+ * The full-size render is compressed by stepping down quality until it fits
+ * FULL_BYTE_BUDGET (a 6MB phone photo should land comfortably under it).
  */
-export async function processImage(file: File): Promise<ProcessedImage> {
-  const bitmap = await createImageBitmap(file);
-  const baseName = file.name.replace(/\.[^.]+$/, "").replace(/[^a-z0-9]/gi, "-");
+export async function processGarmentImage(input: Buffer): Promise<ProcessedImage> {
+  const oriented = sharp(input).rotate();
 
-  const full = await resizeAndEncode(bitmap, FULL_MAX_PX);
-  const thumbnail = await resizeAndEncode(bitmap, THUMB_MAX_PX);
-  bitmap.close();
+  const full = await encodeUnderBudget(
+    oriented.clone().resize({ width: FULL_MAX_PX, height: FULL_MAX_PX, fit: "inside", withoutEnlargement: true }),
+    FULL_BYTE_BUDGET
+  );
+  const thumbnail = await encodeUnderBudget(
+    oriented.clone().resize({ width: THUMB_MAX_PX, height: THUMB_MAX_PX, fit: "inside", withoutEnlargement: true }),
+    FULL_BYTE_BUDGET
+  );
 
-  return { full, thumbnail, baseName };
+  return { full, thumbnail };
 }
 
-async function resizeAndEncode(
-  bitmap: ImageBitmap,
-  maxPx: number
-): Promise<Blob> {
-  const scale = Math.min(1, maxPx / Math.max(bitmap.width, bitmap.height));
-  const w = Math.round(bitmap.width * scale);
-  const h = Math.round(bitmap.height * scale);
-
-  const canvas = new OffscreenCanvas(w, h);
-  const ctx = canvas.getContext("2d")!;
-  ctx.drawImage(bitmap, 0, 0, w, h);
-
-  // convertToBlob outputs WebP and strips all EXIF (canvas has no metadata)
-  return canvas.convertToBlob({ type: "image/webp", quality: WEBP_QUALITY });
+async function encodeUnderBudget(pipeline: ReturnType<typeof sharp>, maxBytes: number): Promise<Buffer> {
+  let smallest: Buffer | null = null;
+  for (const quality of QUALITY_STEPS) {
+    const buf = await pipeline.clone().webp({ quality }).toBuffer();
+    if (!smallest || buf.byteLength < smallest.byteLength) smallest = buf;
+    if (buf.byteLength <= maxBytes) return buf;
+  }
+  // Already at the lowest usable quality — return the smallest we managed.
+  return smallest!;
 }

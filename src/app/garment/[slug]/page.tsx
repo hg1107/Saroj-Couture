@@ -4,9 +4,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { getGarmentBySlug, getGarmentsByCategory, formatPrice } from "@/lib/queries/garments";
 import { getCategories } from "@/lib/queries/categories";
+import { defaultImageAlt } from "@/lib/utils/format";
+import { SEO } from "@/lib/utils/constants";
 import SiteHeader from "@/components/SiteHeader";
 import GarmentImageCarousel from "@/components/GarmentImageCarousel";
 import WhatsAppFab from "@/components/WhatsAppFab";
+import ProductJsonLd from "@/components/seo/ProductJsonLd";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -16,9 +19,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const garment = await getGarmentBySlug(slug);
   if (!garment) return {};
+
+  const categoryName = garment.categories?.name;
+  const title = categoryName
+    ? `${garment.title} — ${categoryName} | Saroj Couture`
+    : `${garment.title} | Saroj Couture`;
+  const description = garment.description ?? `${garment.title} — bespoke custom-stitched garment from Saroj Couture, Nagpur.`;
+  const cover = garment.images.find((i) => i.display_order === 0) ?? garment.images[0];
+
   return {
-    title: `${garment.title} | Saroj Couture`,
-    description: garment.description ?? `${garment.title} — bespoke custom-stitched garment from Saroj Couture, Nagpur.`,
+    title: { absolute: title },
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `${SEO.siteUrl}/garment/${slug}`,
+      images: cover ? [{ url: cover.url }] : undefined,
+    },
   };
 }
 
@@ -40,6 +57,14 @@ export default async function GarmentDetailPage({ params }: Props) {
 
   return (
     <>
+      <ProductJsonLd
+        title={garment.title}
+        description={garment.description}
+        price={garment.price}
+        priceType={garment.price_type}
+        images={garment.images.map((img) => img.url)}
+        slug={garment.slug}
+      />
       <SiteHeader categories={categories} />
 
       <main className="flex-grow pt-16 pb-24 px-margin-mobile flex flex-col gap-8">
@@ -60,7 +85,11 @@ export default async function GarmentDetailPage({ params }: Props) {
         </div>
 
         {/* ── Image Carousel ────────────────────────────────────────────── */}
-        <GarmentImageCarousel images={garment.images} garmentTitle={garment.title} />
+        <GarmentImageCarousel
+          images={garment.images}
+          garmentTitle={garment.title}
+          categoryName={garment.categories?.name}
+        />
 
         {/* ── Garment Details ───────────────────────────────────────────── */}
         <section className="flex flex-col gap-4">
@@ -147,7 +176,7 @@ export default async function GarmentDetailPage({ params }: Props) {
             </h2>
             <div className="flex overflow-x-auto gap-4 pb-4 no-scrollbar -mx-margin-mobile px-margin-mobile">
               {related.map((g) => {
-                const img = (g as any).images?.[0];
+                const img = g.images.find((i) => i.display_order === 0) ?? g.images[0];
                 return (
                   <Link
                     key={g.id}
@@ -158,7 +187,7 @@ export default async function GarmentDetailPage({ params }: Props) {
                     {img ? (
                       <Image
                         src={img.url}
-                        alt={img.alt_text ?? g.title}
+                        alt={img.alt_text ?? defaultImageAlt(g.title, g.categories?.name)}
                         width={160}
                         height={213}
                         className="w-full h-full object-cover"

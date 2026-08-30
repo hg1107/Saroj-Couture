@@ -20,7 +20,7 @@ const libreCaslon = Libre_Caslon_Text({
 // ─── Default metadata (overridden per-page with generateMetadata) ─────────
 export const metadata: Metadata = {
   title: {
-    default: "Saroj Couture — Designer Dresses & Custom Stitching, Nagpur",
+    default: "Saroj Couture — Designer Boutique in Nagpur | Teka Naka, Kamptee Road",
     template: "%s | Saroj Couture",
   },
   description:

@@ -138,7 +138,7 @@ export default function GarmentListClient({ initialGarments, categories }: Props
               {/* Thumbnail */}
               {coverImg ? (
                 <Image
-                  src={coverImg.url}
+                  src={coverImg.thumbnail_url || coverImg.url}
                   alt={coverImg.alt_text ?? g.title}
                   width={56}
                   height={72}

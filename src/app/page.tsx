@@ -3,15 +3,33 @@ import Image from "next/image";
 import Link from "next/link";
 import { getCategories } from "@/lib/queries/categories";
 import { getFeaturedGarments, formatPrice } from "@/lib/queries/garments";
+import { defaultImageAlt } from "@/lib/utils/format";
+import { SEO } from "@/lib/utils/constants";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import WhatsAppFab from "@/components/WhatsAppFab";
+import LocalBusinessJsonLd from "@/components/seo/LocalBusinessJsonLd";
 
-export const metadata: Metadata = {
-  title: "Saroj Couture — Designer Dresses & Custom Stitching, Nagpur",
-  description:
-    "Saroj Couture — bespoke women's designer wear and custom stitching in Teka Naka, Kamptee Road, Nagpur. Sarees, ghagra choli, kurtis, gowns and more.",
-};
+const TITLE = "Saroj Couture — Designer Boutique in Nagpur | Teka Naka, Kamptee Road";
+const DESCRIPTION =
+  "Saroj Couture — bespoke women's designer wear and custom stitching in Teka Naka, Kamptee Road, Nagpur. Sarees, ghagra choli, kurtis, gowns and more.";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const featured = await getFeaturedGarments();
+  const hero = featured[0];
+  const heroImage = hero?.images.find((img) => img.display_order === 0) ?? hero?.images[0];
+
+  return {
+    title: { absolute: TITLE },
+    description: DESCRIPTION,
+    openGraph: {
+      title: TITLE,
+      description: DESCRIPTION,
+      url: SEO.siteUrl,
+      images: heroImage ? [{ url: heroImage.url }] : undefined,
+    },
+  };
+}
 
 export default async function HomePage() {
   const [categories, featured] = await Promise.all([
@@ -20,11 +38,11 @@ export default async function HomePage() {
   ]);
 
   const heroGarment = featured[0];
-  const heroImage   = (heroGarment as any)?.images?.find((img: any) => img.display_order === 0)
-    ?? (heroGarment as any)?.images?.[0];
+  const heroImage   = heroGarment?.images.find((img) => img.display_order === 0) ?? heroGarment?.images[0];
 
   return (
     <>
+      <LocalBusinessJsonLd />
       <SiteHeader categories={categories} />
 
       <main className="pt-16 pb-20">
@@ -40,7 +58,7 @@ export default async function HomePage() {
           {heroImage ? (
             <Image
               src={heroImage.url}
-              alt={heroImage.alt_text ?? "Saroj Couture featured garment"}
+              alt={heroImage.alt_text ?? defaultImageAlt(heroGarment!.title, heroGarment!.categories?.name)}
               fill
               className="absolute inset-0 object-cover z-0"
               priority
@@ -113,8 +131,8 @@ export default async function HomePage() {
             </h2>
             <div className="grid grid-cols-2 gap-x-4 gap-y-10">
               {featured.map((garment) => {
-                const coverImg = (garment as any).images?.find((i: any) => i.display_order === 0)
-                  ?? (garment as any).images?.[0];
+                const coverImg = garment.images.find((i) => i.display_order === 0)
+                  ?? garment.images[0];
                 return (
                   <Link
                     key={garment.id}
@@ -125,7 +143,7 @@ export default async function HomePage() {
                       {coverImg ? (
                         <Image
                           src={coverImg.url}
-                          alt={coverImg.alt_text ?? garment.title}
+                          alt={coverImg.alt_text ?? defaultImageAlt(garment.title, garment.categories?.name)}
                           width={200}
                           height={267}
                           className="w-full h-full object-cover rounded-sm transition-transform duration-700 group-hover:scale-105"

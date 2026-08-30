@@ -95,6 +95,7 @@ export interface Database {
           id: string;
           garment_id: string;
           url: string;
+          thumbnail_url: string;
           alt_text: string | null;
           display_order: number;
           created_at: string;
@@ -103,6 +104,7 @@ export interface Database {
           id?: string;
           garment_id: string;
           url: string;
+          thumbnail_url: string;
           alt_text?: string | null;
           display_order?: number;
           created_at?: string;
@@ -111,6 +113,7 @@ export interface Database {
           id?: string;
           garment_id?: string;
           url?: string;
+          thumbnail_url?: string;
           alt_text?: string | null;
           display_order?: number;
           created_at?: string;
@@ -149,5 +152,5 @@ export type GarmentWithImages = Garment & {
 
 // Garment with joined category + cover images — used in admin list views
 export type GarmentListItem = GarmentWithCategory & {
-  images: Pick<GarmentImage, "id" | "url" | "alt_text" | "display_order">[];
+  images: Pick<GarmentImage, "id" | "url" | "thumbnail_url" | "alt_text" | "display_order">[];
 };

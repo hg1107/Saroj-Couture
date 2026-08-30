@@ -9,3 +9,10 @@ export function formatPrice(price: number | null, priceType: string): string {
   if (priceType === "starting_from") return `Starting from ₹${formatted}`;
   return `₹${formatted}`;
 }
+
+/** Default alt text for a garment image that has none set. */
+export function defaultImageAlt(garmentTitle: string, categoryName?: string | null): string {
+  return categoryName
+    ? `${garmentTitle} — ${categoryName} — boutique in Nagpur`
+    : `${garmentTitle} — boutique in Nagpur`;
+}

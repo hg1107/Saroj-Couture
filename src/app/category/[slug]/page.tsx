@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { getCategories, getCategoryBySlug } from "@/lib/queries/categories";
 import { getGarmentsByCategory, formatPrice } from "@/lib/queries/garments";
+import { defaultImageAlt } from "@/lib/utils/format";
+import { SEO } from "@/lib/utils/constants";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import WhatsAppFab from "@/components/WhatsAppFab";
@@ -16,9 +18,27 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const category = await getCategoryBySlug(slug);
   if (!category) return {};
+
+  const title = `${category.name} — Saroj Couture, Nagpur`;
+  const description = `Browse our ${category.name} collection — bespoke, custom-stitched designer wear from Saroj Couture, Nagpur.`;
+
+  // Only fetch garments for the fallback OG image when the category has no cover of its own.
+  let ogImage = category.cover_image_url ?? undefined;
+  if (!ogImage) {
+    const garments = await getGarmentsByCategory(slug);
+    const cover = garments[0]?.images.find((i) => i.display_order === 0) ?? garments[0]?.images[0];
+    ogImage = cover?.url;
+  }
+
   return {
-    title: `${category.name} | Saroj Couture`,
-    description: `Browse our ${category.name} collection — bespoke, custom-stitched designer wear from Saroj Couture, Nagpur.`,
+    title: { absolute: title },
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `${SEO.siteUrl}/category/${slug}`,
+      images: ogImage ? [{ url: ogImage }] : undefined,
+    },
   };
 }
 
@@ -81,8 +101,8 @@ export default async function CategoryPage({ params }: Props) {
         ) : (
           <div className="grid grid-cols-2 gap-x-4 gap-y-10">
             {garments.map((garment) => {
-              const coverImg = (garment as any).images?.find((i: any) => i.display_order === 0)
-                ?? (garment as any).images?.[0];
+              const coverImg = garment.images.find((i) => i.display_order === 0)
+                ?? garment.images[0];
               return (
                 <Link
                   key={garment.id}
@@ -93,7 +113,7 @@ export default async function CategoryPage({ params }: Props) {
                     {coverImg ? (
                       <Image
                         src={coverImg.url}
-                        alt={coverImg.alt_text ?? garment.title}
+                        alt={coverImg.alt_text ?? defaultImageAlt(garment.title, category.name)}
                         width={200}
                         height={267}
                         className="w-full h-full object-cover rounded-sm transition-transform duration-700 group-hover:scale-105"
