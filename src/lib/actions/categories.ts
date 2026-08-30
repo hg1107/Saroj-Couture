@@ -39,15 +39,16 @@ export async function createCategory(
   _prev: CategoryFormState | undefined,
   formData: FormData
 ): Promise<CategoryFormState> {
-  const supabase  = await db();
-  const name      = String(formData.get("name") ?? "").trim();
-  const isVisible = formData.get("is_visible") !== "off";
+  const supabase      = await db();
+  const name          = String(formData.get("name") ?? "").trim();
+  const isVisible     = formData.get("is_visible") !== "off";
+  const displayOrder  = formData.has("display_order") ? Number(formData.get("display_order")) : 0;
   if (!name) return { error: "Category name is required." };
   const slug = toSlug(name);
 
   const { data: cat, error } = await supabase
     .from("categories")
-    .insert({ name, slug, is_visible: isVisible })
+    .insert({ name, slug, is_visible: isVisible, display_order: displayOrder })
     .select("id")
     .single();
 
@@ -55,7 +56,7 @@ export async function createCategory(
     if (error.code === "23505") {
       const r2 = await supabase
         .from("categories")
-        .insert({ name, slug: `${slug}-${Date.now().toString().slice(-4)}`, is_visible: isVisible })
+        .insert({ name, slug: `${slug}-${Date.now().toString().slice(-4)}`, is_visible: isVisible, display_order: displayOrder })
         .select("id")
         .single();
       if (r2.error) return { error: r2.error.message };
@@ -92,14 +93,25 @@ export async function updateCategory(
   formData: FormData
 ): Promise<CategoryFormState> {
   const supabase = await db();
-  const updates = {
-    name:       String(formData.get("name") ?? "").trim() || undefined,
-    is_visible: formData.get("is_visible") !== "off",
-  };
+
+  // Only touch fields actually present in the submission — e.g. a rename-only
+  // call must not silently flip is_visible back on, and vice versa.
+  const updates: Record<string, unknown> = {};
+
+  const name = String(formData.get("name") ?? "").trim();
+  if (name) updates.name = name;
+
+  if (formData.has("is_visible")) {
+    updates.is_visible = formData.get("is_visible") !== "off";
+  }
+
   const coverFile = formData.get("cover_image") as File | null;
   if (coverFile && coverFile.size > 0) {
-    Object.assign(updates, { cover_image_url: await uploadCoverImage(id, coverFile) });
+    updates.cover_image_url = await uploadCoverImage(id, coverFile);
   }
+
+  if (Object.keys(updates).length === 0) return { success: true };
+
   const { error } = await supabase.from("categories").update(updates).eq("id", id);
   if (error) return { error: error.message };
   revalidatePath("/");
@@ -109,17 +121,14 @@ export async function updateCategory(
 
 // ─── Delete ───────────────────────────────────────────────────────────────────
 
+/**
+ * Deletes a category and reassigns its garments to "Uncategorised" in a
+ * single database transaction (see migration 00003) — never delete the
+ * garments, and never leave garments pointing at a deleted category.
+ */
 export async function deleteCategory(id: string): Promise<CategoryFormState> {
   const supabase = await db();
-  const { data: fallback } = await supabase
-    .from("categories")
-    .select("id")
-    .eq("slug", "uncategorised")
-    .single();
-  if (fallback?.id) {
-    await supabase.from("garments").update({ category_id: fallback.id }).eq("category_id", id);
-  }
-  const { error } = await supabase.from("categories").delete().eq("id", id);
+  const { error } = await supabase.rpc("delete_category_reassign", { p_category_id: id });
   if (error) return { error: error.message };
   revalidatePath("/");
   revalidatePath("/admin/categories");

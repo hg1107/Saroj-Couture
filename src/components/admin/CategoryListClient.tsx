@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -10,6 +10,7 @@ import {
   toggleCategoryVisibility,
   reorderCategories,
   createCategory,
+  updateCategory,
 } from "@/lib/actions/categories";
 
 interface Props {
@@ -17,33 +18,115 @@ interface Props {
   garmentCounts: Record<string, number>;
 }
 
+const UNCATEGORISED_SLUG = "uncategorised";
+
 export default function CategoryListClient({ categories: initial, garmentCounts }: Props) {
-  const router               = useRouter();
-  const [isPending, startT]  = useTransition();
-  const [items, setItems]    = useState(initial);
+  const router              = useRouter();
+  const [isPending, startT] = useTransition();
+
+  // The "Uncategorised" fallback is a system row: no drag, no delete, no
+  // hiding it — it must always exist and always sort last.
+  const [items, setItems]         = useState(initial.filter((c) => c.slug !== UNCATEGORISED_SLUG));
+  const [systemCat, setSystemCat] = useState(initial.find((c) => c.slug === UNCATEGORISED_SLUG) ?? null);
+
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
   const [menuOpen, setMenuOpen]         = useState<string | null>(null);
-  const [showAddForm, setShowAddForm]   = useState(false);
-  const [newName, setNewName]           = useState("");
   const [addError, setAddError]         = useState("");
 
-  // ── Drag-reorder (simple swap) ─────────────────────────────────────────
-  const [dragging, setDragging] = useState<string | null>(null);
+  // ── Inline rename ────────────────────────────────────────────────────────
+  const [renamingId, setRenamingId]   = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
-  function handleDragStart(id: string) { setDragging(id); }
-  function handleDragOver(e: React.DragEvent, targetId: string) {
-    e.preventDefault();
-    if (!dragging || dragging === targetId) return;
-    const from = items.findIndex((c) => c.id === dragging);
-    const to   = items.findIndex((c) => c.id === targetId);
-    if (from === -1 || to === -1) return;
-    const next = [...items];
-    next.splice(to, 0, next.splice(from, 1)[0]);
-    setItems(next);
+  function patchCategory(id: string, patch: Partial<Category>) {
+    setItems((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+    setSystemCat((prev) => (prev && prev.id === id ? { ...prev, ...patch } : prev));
   }
-  async function handleDrop() {
-    if (!dragging) return;
-    setDragging(null);
+
+  function startRename(cat: Category) {
+    setRenamingId(cat.id);
+    setRenameValue(cat.name);
+    setMenuOpen(null);
+  }
+
+  function commitRename(cat: Category) {
+    const value = renameValue.trim();
+    setRenamingId(null);
+    if (!value || value === cat.name) return;
+    patchCategory(cat.id, { name: value });
+    startT(async () => {
+      const fd = new FormData();
+      fd.set("name", value);
+      const result = await updateCategory(cat.id, undefined, fd);
+      if (result.error) patchCategory(cat.id, { name: cat.name });
+      router.refresh();
+    });
+  }
+
+  // ── Cover image (real upload — already-built storage pipeline) ──────────
+  const coverFileInputRef        = useRef<HTMLInputElement>(null);
+  const [coverTargetId, setCoverTargetId] = useState<string | null>(null);
+
+  function handleChangeCoverClick(cat: Category) {
+    setCoverTargetId(cat.id);
+    setMenuOpen(null);
+    coverFileInputRef.current?.click();
+  }
+
+  function handleCoverFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    const targetId = coverTargetId;
+    e.target.value = "";
+    if (!file || !targetId) return;
+    startT(async () => {
+      const fd = new FormData();
+      fd.set("cover_image", file);
+      await updateCategory(targetId, undefined, fd);
+      router.refresh();
+    });
+  }
+
+  // ── Drag-to-reorder (pointer events — works for mouse, touch, and pen) ──
+  const itemRefs = useRef<Map<string, HTMLLIElement>>(new Map());
+  const [dragId, setDragId] = useState<string | null>(null);
+
+  function setItemRef(id: string) {
+    return (el: HTMLLIElement | null) => {
+      if (el) itemRefs.current.set(id, el);
+      else itemRefs.current.delete(id);
+    };
+  }
+
+  function getIndexAtY(y: number): number {
+    for (let i = 0; i < items.length; i++) {
+      const el = itemRefs.current.get(items[i].id);
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      if (y < rect.top + rect.height / 2) return i;
+    }
+    return items.length - 1;
+  }
+
+  function handlePointerDown(e: React.PointerEvent, id: string) {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDragId(id);
+  }
+
+  function handlePointerMove(e: React.PointerEvent) {
+    if (!dragId) return;
+    const fromIndex = items.findIndex((c) => c.id === dragId);
+    const toIndex   = getIndexAtY(e.clientY);
+    if (fromIndex === -1 || toIndex === fromIndex) return;
+    setItems((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, moved);
+      return next;
+    });
+  }
+
+  function finishDrag() {
+    if (!dragId) return;
+    setDragId(null);
     startT(async () => {
       await reorderCategories(items.map((c) => c.id));
       router.refresh();
@@ -52,6 +135,7 @@ export default function CategoryListClient({ categories: initial, garmentCounts 
 
   // ── Visibility toggle ──────────────────────────────────────────────────
   function handleToggleVisibility(cat: Category) {
+    patchCategory(cat.id, { is_visible: !cat.is_visible });
     startT(async () => {
       await toggleCategoryVisibility(cat.id, cat.is_visible);
       router.refresh();
@@ -59,30 +143,200 @@ export default function CategoryListClient({ categories: initial, garmentCounts 
   }
 
   // ── Delete ─────────────────────────────────────────────────────────────
-  async function handleDelete() {
+  function handleDelete() {
     if (!deleteTarget) return;
+    const id = deleteTarget.id;
     startT(async () => {
-      await deleteCategory(deleteTarget.id);
+      const result = await deleteCategory(id);
+      if (result.error) {
+        setDeleteTarget(null);
+        setAddError(result.error);
+        return;
+      }
+      setItems((prev) => prev.filter((c) => c.id !== id));
       setDeleteTarget(null);
       router.refresh();
     });
   }
 
-  // ── Add category ───────────────────────────────────────────────────────
-  async function handleAdd(e: React.FormEvent) {
-    e.preventDefault();
+  // ── Add category — creates the row immediately, then opens it for rename ─
+  function handleAddCategory() {
     setAddError("");
-    if (!newName.trim()) { setAddError("Name is required."); return; }
-    const fd = new FormData();
-    fd.append("name", newName.trim());
-    fd.append("is_visible", "on");
     startT(async () => {
-      const result = await createCategory(undefined as any, fd);
-      if (result?.error) { setAddError(result.error); return; }
-      setNewName("");
-      setShowAddForm(false);
-      router.refresh();
+      const fd = new FormData();
+      fd.set("name", "New Category");
+      fd.set("display_order", String(items.length));
+      const result = await createCategory(undefined, fd);
+      if (result.error || !result.id) {
+        setAddError(result.error ?? "Could not create category.");
+        return;
+      }
+      const newCat: Category = {
+        id: result.id,
+        name: "New Category",
+        slug: "",
+        display_order: items.length,
+        cover_image_url: null,
+        is_visible: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      setItems((prev) => [...prev, newCat]);
+      setRenamingId(newCat.id);
+      setRenameValue(newCat.name);
     });
+  }
+
+  function renderRow(cat: Category, opts: { system: boolean }) {
+    const count = garmentCounts[cat.id] ?? 0;
+    const isRenaming = renamingId === cat.id;
+
+    return (
+      <li
+        key={cat.id}
+        ref={opts.system ? undefined : setItemRef(cat.id)}
+        className={`flex items-center justify-between py-4 border-b border-outline-variant bg-surface-container-lowest transition-opacity select-none ${
+          !cat.is_visible ? "opacity-75" : ""
+        } ${dragId === cat.id ? "opacity-50" : ""}`}
+      >
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          {/* Drag handle (hidden for the system row — it always sorts last) */}
+          {opts.system ? (
+            <span className="material-symbols-outlined text-outline-variant w-6 text-center" aria-hidden="true" title="System category">
+              lock
+            </span>
+          ) : (
+            <span
+              className="material-symbols-outlined text-outline cursor-grab active:cursor-grabbing"
+              style={{ touchAction: "none" }}
+              aria-hidden="true"
+              title="Drag to reorder"
+              onPointerDown={(e) => handlePointerDown(e, cat.id)}
+              onPointerMove={handlePointerMove}
+              onPointerUp={finishDrag}
+              onPointerCancel={finishDrag}
+            >
+              drag_indicator
+            </span>
+          )}
+
+          {/* Cover thumbnail */}
+          <div className="w-12 h-12 rounded bg-surface-variant border border-outline-variant overflow-hidden shrink-0">
+            {cat.cover_image_url ? (
+              <Image
+                src={cat.cover_image_url}
+                alt={cat.name}
+                width={48}
+                height={48}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <span className="material-symbols-outlined text-outline text-sm" aria-hidden="true">image</span>
+              </div>
+            )}
+          </div>
+
+          {/* Name + count */}
+          <div className="flex flex-col min-w-0 flex-1">
+            {isRenaming ? (
+              <input
+                type="text"
+                value={renameValue}
+                autoFocus
+                onFocus={(e) => e.target.select()}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onBlur={() => commitRename(cat)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { e.preventDefault(); commitRename(cat); }
+                  if (e.key === "Escape") { e.preventDefault(); setRenamingId(null); }
+                }}
+                aria-label={`Rename ${cat.name}`}
+                className="w-full border-0 border-b border-primary bg-transparent py-0.5 font-label-lg text-label-lg text-on-surface focus:ring-0 focus:outline-none"
+              />
+            ) : (
+              <span className="font-label-lg text-label-lg text-on-surface truncate">{cat.name}</span>
+            )}
+            <span className="font-body-sm text-body-sm text-on-surface-variant">
+              {count} {count === 1 ? "piece" : "pieces"}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* Visibility toggle */}
+          <button
+            onClick={() => handleToggleVisibility(cat)}
+            disabled={opts.system}
+            aria-label={cat.is_visible ? `Hide ${cat.name}` : `Show ${cat.name}`}
+            aria-pressed={cat.is_visible}
+            title={opts.system ? "Always hidden from the public site" : undefined}
+            className="text-outline hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary rounded p-1 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-outline"
+          >
+            <span className="material-symbols-outlined" aria-hidden="true">
+              {cat.is_visible ? "visibility" : "visibility_off"}
+            </span>
+          </button>
+
+          {/* Overflow menu */}
+          <div className="relative">
+            <button
+              aria-label={`Options for ${cat.name}`}
+              aria-expanded={menuOpen === cat.id}
+              aria-haspopup="menu"
+              onClick={() => setMenuOpen(menuOpen === cat.id ? null : cat.id)}
+              className="text-on-surface cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary rounded p-1"
+            >
+              <span className="material-symbols-outlined" aria-hidden="true">more_vert</span>
+            </button>
+
+            {menuOpen === cat.id && (
+              <>
+                <div className="fixed inset-0 z-10" aria-hidden="true" onClick={() => setMenuOpen(null)} />
+                <ul
+                  role="menu"
+                  aria-label={`Options for ${cat.name}`}
+                  className="absolute right-0 top-full mt-1 z-20 bg-surface-container-lowest border border-outline-variant rounded-sm w-44 py-1"
+                >
+                  <li role="none">
+                    <button
+                      role="menuitem"
+                      onClick={() => startRename(cat)}
+                      className="w-full text-left px-4 py-2 font-body-sm text-body-sm text-on-surface hover:bg-surface-container transition-colors"
+                    >
+                      Rename
+                    </button>
+                  </li>
+                  <li role="none">
+                    <button
+                      role="menuitem"
+                      onClick={() => handleChangeCoverClick(cat)}
+                      className="w-full text-left px-4 py-2 font-body-sm text-body-sm text-on-surface hover:bg-surface-container transition-colors"
+                    >
+                      Change cover
+                    </button>
+                  </li>
+                  {!opts.system && (
+                    <>
+                      <li role="separator" className="border-t border-outline-variant my-1" />
+                      <li role="none">
+                        <button
+                          role="menuitem"
+                          onClick={() => { setDeleteTarget(cat); setMenuOpen(null); }}
+                          className="w-full text-left px-4 py-2 font-body-sm text-body-sm text-error hover:bg-error-container transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </li>
+                    </>
+                  )}
+                </ul>
+              </>
+            )}
+          </div>
+        </div>
+      </li>
+    );
   }
 
   return (
@@ -106,147 +360,34 @@ export default function CategoryListClient({ categories: initial, garmentCounts 
       </p>
 
       {/* ── Category List ─────────────────────────────────────────────────── */}
-      <ul className="flex flex-col border-t border-outline-variant" aria-label="Categories">
-        {items.map((cat) => (
-          <li
-            key={cat.id}
-            draggable
-            onDragStart={() => handleDragStart(cat.id)}
-            onDragOver={(e) => handleDragOver(e, cat.id)}
-            onDrop={handleDrop}
-            onDragEnd={handleDrop}
-            className={`flex items-center justify-between py-4 border-b border-outline-variant bg-surface-container-lowest transition-opacity ${
-              !cat.is_visible ? "opacity-75" : ""
-            } ${dragging === cat.id ? "opacity-50" : ""}`}
-          >
-            <div className="flex items-center gap-4 flex-1 min-w-0">
-              {/* Drag handle */}
-              <span
-                className="material-symbols-outlined text-outline cursor-grab active:cursor-grabbing"
-                aria-hidden="true"
-                title="Drag to reorder"
-              >
-                drag_indicator
-              </span>
-
-              {/* Cover thumbnail */}
-              <div className="w-12 h-12 rounded bg-surface-variant border border-outline-variant overflow-hidden shrink-0">
-                {cat.cover_image_url ? (
-                  <Image
-                    src={cat.cover_image_url}
-                    alt={cat.name}
-                    width={48}
-                    height={48}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <span className="material-symbols-outlined text-outline text-sm" aria-hidden="true">image</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Name + count */}
-              <div className="flex flex-col min-w-0">
-                <span className="font-label-lg text-label-lg text-on-surface truncate">{cat.name}</span>
-                <span className="font-body-sm text-body-sm text-on-surface-variant">
-                  {garmentCounts[cat.id] ?? 0} {garmentCounts[cat.id] === 1 ? "piece" : "pieces"}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {/* Visibility toggle */}
-              <button
-                onClick={() => handleToggleVisibility(cat)}
-                aria-label={cat.is_visible ? `Hide ${cat.name}` : `Show ${cat.name}`}
-                aria-pressed={cat.is_visible}
-                className="text-outline hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary rounded p-1"
-              >
-                <span className="material-symbols-outlined" aria-hidden="true">
-                  {cat.is_visible ? "visibility" : "visibility_off"}
-                </span>
-              </button>
-
-              {/* Overflow menu */}
-              <div className="relative">
-                <button
-                  aria-label={`Options for ${cat.name}`}
-                  aria-expanded={menuOpen === cat.id}
-                  aria-haspopup="menu"
-                  onClick={() => setMenuOpen(menuOpen === cat.id ? null : cat.id)}
-                  className="text-on-surface cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary rounded p-1"
-                >
-                  <span className="material-symbols-outlined" aria-hidden="true">more_vert</span>
-                </button>
-
-                {menuOpen === cat.id && (
-                  <>
-                    <div className="fixed inset-0 z-10" aria-hidden="true" onClick={() => setMenuOpen(null)} />
-                    <ul
-                      role="menu"
-                      aria-label={`Options for ${cat.name}`}
-                      className="absolute right-0 top-full mt-1 z-20 bg-surface-container-lowest border border-outline-variant rounded-sm w-36 py-1"
-                    >
-                      <li role="none">
-                        <button
-                          role="menuitem"
-                          onClick={() => { setDeleteTarget(cat); setMenuOpen(null); }}
-                          className="w-full text-left px-4 py-2 font-body-sm text-body-sm text-error hover:bg-error-container transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </li>
-                    </ul>
-                  </>
-                )}
-              </div>
-            </div>
-          </li>
-        ))}
+      <ul className="flex flex-col border-t border-outline-variant" aria-label="Categories" aria-busy={isPending}>
+        {items.map((cat) => renderRow(cat, { system: false }))}
+        {systemCat && renderRow(systemCat, { system: true })}
       </ul>
+
+      {/* Shared hidden file input for "Change cover" */}
+      <input
+        ref={coverFileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleCoverFileChange}
+        className="sr-only"
+        aria-hidden="true"
+        tabIndex={-1}
+      />
 
       {/* ── Add Category ───────────────────────────────────────────────────── */}
       <div className="mt-8">
-        {showAddForm ? (
-          <form onSubmit={handleAdd} className="flex flex-col gap-4">
-            <input
-              type="text"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Category name"
-              autoFocus
-              aria-label="New category name"
-              className="w-full border-0 border-b border-outline-variant bg-transparent py-2 font-body-md text-body-md text-primary placeholder-outline focus:ring-0 focus:border-primary transition-colors"
-            />
-            {addError && (
-              <p role="alert" className="font-body-sm text-body-sm text-error">{addError}</p>
-            )}
-            <div className="flex gap-4">
-              <button
-                type="submit"
-                disabled={isPending}
-                className="font-label-lg text-label-lg text-on-secondary bg-secondary px-6 py-2 rounded-sm uppercase tracking-widest hover:opacity-90 transition-opacity disabled:opacity-60"
-              >
-                {isPending ? "Saving…" : "Add"}
-              </button>
-              <button
-                type="button"
-                onClick={() => { setShowAddForm(false); setNewName(""); setAddError(""); }}
-                className="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest hover:opacity-70 transition-opacity"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        ) : (
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="flex items-center gap-2 font-label-lg text-label-lg text-secondary uppercase tracking-widest hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary rounded"
-          >
-            <span className="material-symbols-outlined" aria-hidden="true">add</span>
-            Add category
-          </button>
+        <button
+          onClick={handleAddCategory}
+          disabled={isPending}
+          className="flex items-center gap-2 font-label-lg text-label-lg text-secondary uppercase tracking-widest hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary rounded disabled:opacity-60"
+        >
+          <span className="material-symbols-outlined" aria-hidden="true">add</span>
+          Add category
+        </button>
+        {addError && (
+          <p role="alert" className="font-body-sm text-body-sm text-error mt-2">{addError}</p>
         )}
       </div>
 
@@ -264,7 +405,17 @@ export default function CategoryListClient({ categories: initial, garmentCounts 
               Delete category?
             </h2>
             <p id="delete-dialog-desc" className="font-body-md text-body-md text-on-surface-variant mb-6">
-              Are you sure you want to delete &ldquo;{deleteTarget.name}&rdquo;? Any pieces currently assigned here will be moved to &lsquo;Uncategorised&rsquo;.
+              {(() => {
+                const count = garmentCounts[deleteTarget.id] ?? 0;
+                return count > 0 ? (
+                  <>
+                    &ldquo;{deleteTarget.name}&rdquo; contains {count} {count === 1 ? "garment" : "garments"}.
+                    {" "}Deleting it will move {count === 1 ? "that garment" : "them"} to &lsquo;Uncategorised&rsquo; — no garments will be deleted.
+                  </>
+                ) : (
+                  <>&ldquo;{deleteTarget.name}&rdquo; has no garments in it. It will be deleted permanently.</>
+                );
+              })()}
             </p>
             <div className="flex flex-col gap-3">
               <button
