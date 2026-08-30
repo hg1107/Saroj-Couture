@@ -95,7 +95,6 @@ export interface Database {
           id: string;
           garment_id: string;
           url: string;
-          thumbnail_url: string;
           alt_text: string | null;
           display_order: number;
           created_at: string;
@@ -104,7 +103,6 @@ export interface Database {
           id?: string;
           garment_id: string;
           url: string;
-          thumbnail_url: string;
           alt_text?: string | null;
           display_order?: number;
           created_at?: string;
@@ -113,7 +111,6 @@ export interface Database {
           id?: string;
           garment_id?: string;
           url?: string;
-          thumbnail_url?: string;
           alt_text?: string | null;
           display_order?: number;
           created_at?: string;

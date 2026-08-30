@@ -1,10 +1,19 @@
-// Admin garment list — /admin/garments
-// Phase 3 will add search, filter, garment rows, and FAB.
-export default function AdminGarmentsPage() {
+import { getAllGarmentsAdmin } from "@/lib/queries/garments";
+import { getAllCategoriesAdmin } from "@/lib/queries/categories";
+import GarmentListClient from "@/components/admin/GarmentListClient";
+
+export const metadata = { title: "Garments | Admin — Saroj Couture" };
+
+export default async function AdminGarmentsPage() {
+  const [garments, categories] = await Promise.all([
+    getAllGarmentsAdmin(),
+    getAllCategoriesAdmin(),
+  ]);
+
   return (
-    <main className="p-6">
-      <h1 className="font-serif text-2xl text-on-surface mb-4">Manage Work</h1>
-      <p className="text-on-surface-variant">Coming soon — Garments list</p>
-    </main>
+    <GarmentListClient
+      initialGarments={garments as any}
+      categories={categories}
+    />
   );
 }

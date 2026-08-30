@@ -1,20 +1,42 @@
 "use server";
-/**
- * Auth server actions — login, logout, password reset.
- * Phase 1 task 1.6
- */
-// TODO: implement login, logout, resetPassword actions
-export async function login(_formData: FormData) {
-  // Phase 1: implement with createServerClient().auth.signInWithPassword()
-  throw new Error("Not implemented yet — Phase 1");
+
+import { redirect } from "next/navigation";
+import { createServerClient } from "@/lib/supabase/server";
+
+export async function loginAction(
+  _prev: { error?: string } | undefined,
+  formData: FormData
+) {
+  const email    = String(formData.get("email") ?? "");
+  const password = String(formData.get("password") ?? "");
+
+  const supabase = await createServerClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  redirect("/admin/garments");
 }
 
-export async function logout() {
-  // Phase 1: implement with createServerClient().auth.signOut()
-  throw new Error("Not implemented yet — Phase 1");
+/** Alias for backward compat */
+export const login = loginAction;
+
+export async function logoutAction() {
+  const supabase = await createServerClient();
+  await supabase.auth.signOut();
+  redirect("/auth/login");
 }
 
-export async function resetPassword(_email: string) {
-  // Phase 1: implement with createServerClient().auth.resetPasswordForEmail()
-  throw new Error("Not implemented yet — Phase 1");
+/** Alias */
+export const logout = logoutAction;
+
+export async function resetPassword(email: string) {
+  const supabase = await createServerClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/reset`,
+  });
+  if (error) return { error: error.message };
+  return { success: true };
 }
