@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { slugify, uniqueSlug } from "@/lib/utils/slug";
+import { STORAGE } from "@/lib/utils/constants";
+import { garmentImagePaths, isValidImageId } from "@/lib/utils/garment-image-paths";
 
 export interface GarmentFormState {
   error?: string;
@@ -31,24 +34,48 @@ async function saveGarmentImages(
   garmentId: string,
   formData: FormData
 ): Promise<string | undefined> {
-  const ids          = formData.getAll("image_ids").map(String);
-  const urls         = formData.getAll("image_urls").map(String);
-  const thumbnailUrls = formData.getAll("image_thumbnail_urls").map(String);
+  const ids = formData.getAll("image_ids").map(String);
 
   const { error: delError } = await supabase.from("images").delete().eq("garment_id", garmentId);
   if (delError) return delError.message;
   if (ids.length === 0) return undefined;
 
-  const rows = ids.map((id, i) => ({
-    id,
-    garment_id: garmentId,
-    url: urls[i],
-    thumbnail_url: thumbnailUrls[i],
-    display_order: i,
-    alt_text: null as string | null,
-  }));
+  if (ids.some((id) => !isValidImageId(id))) return "Invalid image id.";
+
+  // Derive each image's public URL from its Storage path server-side —
+  // never trust the client-submitted URL, only the id it was uploaded under.
+  const rows = ids.map((id, i) => {
+    const { fullPath, thumbPath } = garmentImagePaths(garmentId, id);
+    const { data: fullUrl }  = supabase.storage.from(STORAGE.garmentImages).getPublicUrl(fullPath);
+    const { data: thumbUrl } = supabase.storage.from(STORAGE.garmentImages).getPublicUrl(thumbPath);
+    return {
+      id,
+      garment_id: garmentId,
+      url: fullUrl.publicUrl,
+      thumbnail_url: thumbUrl.publicUrl,
+      display_order: i,
+      alt_text: null as string | null,
+    };
+  });
   const { error: insError } = await supabase.from("images").insert(rows);
   return insError?.message;
+}
+
+/** Best-effort removal of every Storage object (full + thumb) belonging to
+ * a garment's images. Called right before/after the DB rows are gone, so a
+ * deleted garment never leaves its photos sitting in public Storage. */
+async function removeGarmentImageFiles(imageIds: string[], garmentId: string) {
+  if (imageIds.length === 0) return;
+  const paths = imageIds.flatMap((id) => {
+    const { fullPath, thumbPath } = garmentImagePaths(garmentId, id);
+    return [fullPath, thumbPath];
+  });
+  try {
+    const admin = createAdminClient();
+    await admin.storage.from(STORAGE.garmentImages).remove(paths);
+  } catch (err) {
+    console.error("Failed to clean up garment image files:", err);
+  }
 }
 
 // ─── Create ───────────────────────────────────────────────────────────────────
@@ -134,8 +161,15 @@ export async function updateGarment(
 
 export async function deleteGarment(id: string): Promise<GarmentFormState> {
   const supabase = await db();
+
+  const { data: images } = await supabase.from("images").select("id").eq("garment_id", id);
+  const imageIds = ((images ?? []) as { id: string }[]).map((img) => img.id);
+
   const { error } = await supabase.from("garments").delete().eq("id", id);
   if (error) return { error: error.message };
+
+  await removeGarmentImageFiles(imageIds, id);
+
   revalidatePath("/");
   revalidatePath("/admin/garments");
   return { success: true };

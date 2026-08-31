@@ -7,10 +7,18 @@ import type { Database } from "./types";
  * Refreshes the auth session on every request so server components
  * always see a valid (non-expired) session.
  *
+ * `nonce` is forwarded as an `x-nonce` request header so Server Components
+ * can read it via `headers()` if they ever need to nonce a custom inline
+ * script — Next also auto-applies it to its own bootstrap script once it
+ * sees the matching value in the CSP response header (set by the caller).
+ *
  * Used inside src/proxy.ts — do not import in components.
  */
-export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+export async function updateSession(request: NextRequest, nonce: string) {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+
+  let supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } });
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
@@ -36,7 +44,7 @@ export async function updateSession(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
-          supabaseResponse = NextResponse.next({ request });
+          supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           );

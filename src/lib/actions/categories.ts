@@ -160,6 +160,16 @@ export async function deleteCategory(id: string): Promise<CategoryFormState> {
   const supabase = await db();
   const { error } = await supabase.rpc("delete_category_reassign", { p_category_id: id });
   if (error) return { error: error.message };
+
+  // Best-effort — the cover lives at a deterministic path, so this is safe
+  // to call even when the category never had one.
+  try {
+    const admin = createAdminClient();
+    await admin.storage.from(STORAGE.categoryCovers).remove([`categories/${id}/cover.webp`]);
+  } catch (err) {
+    console.error("Failed to clean up category cover image:", err);
+  }
+
   revalidatePath("/");
   revalidatePath("/admin/categories");
   return { success: true };

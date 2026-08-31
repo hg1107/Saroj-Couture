@@ -22,8 +22,6 @@ interface ImageSlot {
   previewUrl: string;
   status: "uploading" | "done" | "error";
   progress: number;
-  url?: string;
-  thumbnailUrl?: string;
   error?: string;
 }
 
@@ -79,10 +77,8 @@ export default function GarmentImageUploader({ garmentId, initialImages }: Props
       .map((img) => ({
         id: img.id,
         previewUrl: img.thumbnailUrl,
-        status: "done",
+        status: "done" as const,
         progress: 100,
-        url: img.url,
-        thumbnailUrl: img.thumbnailUrl,
       }))
   );
 
@@ -154,7 +150,7 @@ export default function GarmentImageUploader({ garmentId, initialImages }: Props
           setSlots((prev) =>
             prev.map((s) =>
               s.id === id
-                ? { ...s, id: serverId, status: "done", progress: 100, url, thumbnailUrl, previewUrl: thumbnailUrl }
+                ? { ...s, id: serverId, status: "done", progress: 100, previewUrl: thumbnailUrl }
                 : s
             )
           );
@@ -285,15 +281,13 @@ export default function GarmentImageUploader({ garmentId, initialImages }: Props
         </div>
       )}
 
-      {/* Submitted with the form, in display order — only fully-uploaded images count */}
+      {/* Submitted with the form, in display order — only fully-uploaded images
+          count. Just the id: the server re-derives each image's URL from its
+          Storage path rather than trusting a client-submitted URL. */}
       {slots
         .filter((s) => s.status === "done")
         .map((s) => (
-          <span key={s.id}>
-            <input type="hidden" name="image_ids" value={s.id} />
-            <input type="hidden" name="image_urls" value={s.url} />
-            <input type="hidden" name="image_thumbnail_urls" value={s.thumbnailUrl} />
-          </span>
+          <input key={s.id} type="hidden" name="image_ids" value={s.id} />
         ))}
     </section>
   );

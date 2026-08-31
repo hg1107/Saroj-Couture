@@ -121,7 +121,16 @@ export interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      delete_category_reassign: {
+        Args: { p_category_id: string };
+        Returns: void;
+      };
+      check_rate_limit: {
+        Args: { p_key: string; p_limit: number; p_window_seconds: number };
+        Returns: boolean;
+      };
+    };
     Enums: Record<string, never>;
   };
 }

@@ -28,7 +28,7 @@ export async function loginAction(
   // Keyed by IP+email so one bad actor can't lock out a legitimate email
   // from a different IP, while still capping attempts per source.
   const key = `login:${await clientIp()}:${email.toLowerCase()}`;
-  if (!checkRateLimit(key, LOGIN_ATTEMPT_LIMIT, LOGIN_WINDOW_MS)) {
+  if (!(await checkRateLimit(key, LOGIN_ATTEMPT_LIMIT, LOGIN_WINDOW_MS))) {
     return { error: TOO_MANY_ATTEMPTS_MESSAGE };
   }
 
@@ -68,7 +68,7 @@ export async function requestPasswordResetAction(
   // Returns the same success response either way, same as below — this
   // just caps how many reset emails one source can trigger.
   const key = `reset:${await clientIp()}:${email.toLowerCase()}`;
-  if (!checkRateLimit(key, RESET_ATTEMPT_LIMIT, RESET_WINDOW_MS)) {
+  if (!(await checkRateLimit(key, RESET_ATTEMPT_LIMIT, RESET_WINDOW_MS))) {
     return { success: true };
   }
 

@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { processGarmentImage } from "@/lib/utils/image-processing";
 import { STORAGE } from "@/lib/utils/constants";
+import { garmentImagePaths as storagePaths } from "@/lib/utils/garment-image-paths";
 
 // sharp needs the Node.js runtime (native bindings) — never edge.
 export const runtime = "nodejs";
@@ -10,13 +11,6 @@ export const runtime = "nodejs";
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20MB — generous ceiling above a typical phone photo
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function storagePaths(garmentId: string, imageId: string) {
-  return {
-    fullPath: `garments/${garmentId}/${imageId}-full.webp`,
-    thumbPath: `garments/${garmentId}/${imageId}-thumb.webp`,
-  };
-}
 
 async function requireAuth() {
   const supabase = await createServerClient();
