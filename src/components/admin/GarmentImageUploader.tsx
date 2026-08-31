@@ -5,6 +5,18 @@ import { useRef, useState } from "react";
 const MAX_IMAGES = 6;
 const UPLOAD_URL = "/api/admin/garment-images";
 
+// Only allow image-safe URL schemes as an <img src>. Blocks scheme-based
+// injection (e.g. "javascript:") from a compromised upload response or
+// stored garment record before it ever reaches the DOM.
+function isSafeImageUrl(url: string): boolean {
+  try {
+    const { protocol } = new URL(url, window.location.origin);
+    return protocol === "http:" || protocol === "https:" || protocol === "blob:";
+  } catch {
+    return false;
+  }
+}
+
 interface ImageSlot {
   id: string;           // once uploaded, doubles as the Storage path segment
   previewUrl: string;
@@ -62,14 +74,16 @@ function uploadWithProgress(
 
 export default function GarmentImageUploader({ garmentId, initialImages }: Props) {
   const [slots, setSlots] = useState<ImageSlot[]>(
-    initialImages.map((img) => ({
-      id: img.id,
-      previewUrl: img.thumbnailUrl,
-      status: "done",
-      progress: 100,
-      url: img.url,
-      thumbnailUrl: img.thumbnailUrl,
-    }))
+    initialImages
+      .filter((img) => isSafeImageUrl(img.thumbnailUrl) && isSafeImageUrl(img.url))
+      .map((img) => ({
+        id: img.id,
+        previewUrl: img.thumbnailUrl,
+        status: "done",
+        progress: 100,
+        url: img.url,
+        thumbnailUrl: img.thumbnailUrl,
+      }))
   );
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -134,6 +148,9 @@ export default function GarmentImageUploader({ garmentId, initialImages }: Props
         xhrHolder
       )
         .then(({ id: serverId, url, thumbnailUrl }) => {
+          if (!isSafeImageUrl(url) || !isSafeImageUrl(thumbnailUrl)) {
+            throw new Error("Upload returned an invalid image URL");
+          }
           setSlots((prev) =>
             prev.map((s) =>
               s.id === id
