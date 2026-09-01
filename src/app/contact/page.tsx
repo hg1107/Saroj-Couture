@@ -23,7 +23,7 @@ export default async function ContactPage() {
     <>
       <SiteHeader categories={categories} />
 
-      <main className="w-full max-w-[1000px] mx-auto px-margin-mobile md:px-margin-desktop pb-section-gap pt-10 mt-16 flex flex-col gap-12">
+      <main className="w-full max-w-[1000px] mx-auto px-margin-mobile md:px-margin-desktop pb-section-gap pt-10 mt-14 flex flex-col gap-12">
         {/* ── Header ────────────────────────────────────────────────────── */}
         <div className="flex flex-col items-center text-center max-w-xl mx-auto pt-4">
           <span className="font-label-md text-label-md text-secondary uppercase tracking-widest font-medium mb-2">

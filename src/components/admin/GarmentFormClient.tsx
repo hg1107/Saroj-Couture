@@ -85,7 +85,7 @@ export default function GarmentFormClient({ categories, garment }: Props) {
   }
 
   return (
-    <div className="pt-16 pb-24 px-margin-mobile">
+    <div className="pb-24 px-margin-mobile">
       {/* Header */}
       <div className="flex items-center justify-between py-6">
         <button

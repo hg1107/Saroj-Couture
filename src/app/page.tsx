@@ -39,39 +39,39 @@ export default async function HomePage() {
       <LocalBusinessJsonLd />
       <SiteHeader categories={categories} />
 
-      <main className="pt-20 pb-20 max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop w-full flex flex-col gap-16">
+      <main className="pt-[4.5rem] pb-16 max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop w-full flex flex-col gap-10 md:gap-12">
         {/* ── Editorial Atelier Hero Section ──────────────────────────── */}
         <section
           aria-label="Hero"
-          className="relative w-full rounded-sm overflow-hidden bg-gradient-to-br from-[#1b1713] via-[#15120f] to-[#0d0c0a] text-[#fcf9f4] border border-[#383027] p-8 md:p-16 flex flex-col justify-center items-center text-center"
+          className="relative w-full rounded-sm overflow-hidden bg-gradient-to-br from-[#1b1713] via-[#15120f] to-[#0d0c0a] text-[#fcf9f4] border border-[#383027] py-6 px-4 md:py-10 md:px-8 flex flex-col justify-center items-center text-center"
         >
           {/* Subtle gold accent frame */}
-          <div className="absolute inset-3 md:inset-4 border border-[#524436]/40 pointer-events-none rounded-xs" aria-hidden="true" />
+          <div className="absolute inset-2.5 md:inset-3 border border-[#524436]/40 pointer-events-none rounded-xs" aria-hidden="true" />
 
-          <div className="relative z-10 max-w-2xl flex flex-col items-center gap-5 my-4">
+          <div className="relative z-10 max-w-xl flex flex-col items-center gap-3.5 sm:gap-4 my-1">
             {/* Atelier Crest / Tagline */}
-            <div className="flex items-center gap-3 text-secondary-container font-label-md text-xs tracking-[0.25em] uppercase">
-              <span className="w-6 md:w-10 h-px bg-secondary-container/80" />
+            <div className="flex items-center gap-2.5 sm:gap-3 text-secondary-container font-label-md text-[11px] sm:text-xs tracking-[0.2em] uppercase">
+              <span className="w-5 md:w-8 h-px bg-secondary-container/80" />
               <span>Haute Atelier • Nagpur</span>
-              <span className="w-6 md:w-10 h-px bg-secondary-container/80" />
+              <span className="w-5 md:w-8 h-px bg-secondary-container/80" />
             </div>
 
             {/* Main Headline */}
-            <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-[#fcf9f4] font-normal leading-[1.15] tracking-wide">
+            <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl text-[#fcf9f4] font-normal leading-tight tracking-wide">
               Bespoke Elegance,<br />
               <span className="italic font-light text-[#e8d5c4]">Made to Your Measure.</span>
             </h1>
 
             {/* Description */}
-            <p className="font-sans text-sm md:text-base text-[#cfc5ba] max-w-lg leading-relaxed font-light">
+            <p className="font-sans text-xs sm:text-sm text-[#cfc5ba] max-w-md leading-normal font-light">
               Exquisite custom-stitched sarees, bridal lehengas, and designer couture tailored to your exact measurements and aesthetic at our Nagpur atelier.
             </p>
 
             {/* Action Buttons */}
-            <div className="flex flex-wrap justify-center gap-4 mt-3">
+            <div className="flex flex-wrap justify-center gap-3 mt-1.5">
               <Link
                 href="/gallery"
-                className="bg-secondary text-on-secondary px-8 py-3.5 rounded-xs font-label-lg text-xs uppercase tracking-[0.15em] inline-flex items-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all shadow-md font-medium"
+                className="bg-secondary text-on-secondary px-5 py-2.5 sm:px-6 sm:py-2.5 rounded-xs font-label-lg text-xs uppercase tracking-[0.12em] inline-flex items-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all shadow-md font-medium"
               >
                 <span>Explore Gallery</span>
                 <span className="material-symbols-outlined text-sm" aria-hidden="true">arrow_forward</span>
@@ -80,15 +80,15 @@ export default async function HomePage() {
                 href={whatsappConsultUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="border border-[#7d6954] text-[#fcf9f4] hover:bg-white/5 px-7 py-3.5 rounded-xs font-label-lg text-xs uppercase tracking-[0.15em] inline-flex items-center gap-2 transition-colors font-medium"
+                className="border border-[#7d6954] text-[#fcf9f4] hover:bg-white/5 px-5 py-2.5 sm:px-6 sm:py-2.5 rounded-xs font-label-lg text-xs uppercase tracking-[0.12em] inline-flex items-center gap-2 transition-colors font-medium"
               >
-                <span className="material-symbols-outlined text-base" aria-hidden="true">chat</span>
+                <span className="material-symbols-outlined text-sm" aria-hidden="true">chat</span>
                 <span>WhatsApp Consultation</span>
               </a>
             </div>
 
             {/* Trust highlights */}
-            <div className="flex flex-wrap justify-center items-center gap-6 md:gap-10 pt-6 mt-4 border-t border-white/10 text-xs text-[#a89d90] font-sans">
+            <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-8 pt-3.5 mt-2 border-t border-white/10 text-[11px] sm:text-xs text-[#a89d90] font-sans">
               <span className="flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-secondary text-sm">straighten</span>
                 Custom Silhouette Fitting

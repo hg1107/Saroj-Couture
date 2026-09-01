@@ -33,7 +33,7 @@ export default function ResetPasswordPage() {
             />
             <label
               htmlFor="password"
-              className="absolute left-0 top-2 origin-[0] -translate-y-6 scale-75 transform font-label-md text-label-md text-on-surface-variant duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-primary uppercase tracking-widest -z-10"
+              className="absolute left-0 top-2 origin-[0] -translate-y-6 scale-75 transform font-label-md text-label-md text-on-surface-variant duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-primary uppercase tracking-widest"
             >
               New password
             </label>
@@ -53,7 +53,7 @@ export default function ResetPasswordPage() {
             />
             <label
               htmlFor="confirmPassword"
-              className="absolute left-0 top-2 origin-[0] -translate-y-6 scale-75 transform font-label-md text-label-md text-on-surface-variant duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-primary uppercase tracking-widest -z-10"
+              className="absolute left-0 top-2 origin-[0] -translate-y-6 scale-75 transform font-label-md text-label-md text-on-surface-variant duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:-translate-y-6 peer-focus:scale-75 peer-focus:text-primary uppercase tracking-widest"
             >
               Confirm password
             </label>

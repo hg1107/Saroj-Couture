@@ -67,7 +67,7 @@ export default async function GarmentDetailPage({ params }: Props) {
       />
       <SiteHeader categories={categories} />
 
-      <main className="flex-grow pt-20 pb-24 px-margin-mobile md:px-margin-desktop max-w-5xl mx-auto w-full flex flex-col gap-10">
+      <main className="flex-grow pt-[4.5rem] pb-24 px-margin-mobile md:px-margin-desktop max-w-5xl mx-auto w-full flex flex-col gap-10">
         {/* ── Back navigation ───────────────────────────────────────────── */}
         <div className="flex items-center gap-2 pt-2">
           <Link

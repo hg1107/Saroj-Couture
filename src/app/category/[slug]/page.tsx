@@ -57,7 +57,7 @@ export default async function CategoryPage({ params }: Props) {
     <>
       <SiteHeader categories={allCategories} />
 
-      <main className="w-full max-w-[1280px] mx-auto px-margin-mobile pb-section-gap pt-8 mt-16">
+      <main className="w-full max-w-[1280px] mx-auto px-margin-mobile pb-section-gap pt-8 mt-14">
         {/* ── Category Header ────────────────────────────────────────────── */}
         <div className="flex flex-col items-center mb-8 text-center">
           <h1 className="text-3xl font-medium tracking-wide text-primary font-serif mb-2">

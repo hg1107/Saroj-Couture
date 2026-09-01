@@ -13,11 +13,11 @@ interface SiteHeaderProps {
 export default function SiteHeader({ categories }: SiteHeaderProps) {
   return (
     <>
-      <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-mobile h-16 bg-background border-b border-outline-variant">
+      <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-mobile h-14 bg-background border-b border-outline-variant">
         {/* Brand — centred */}
         <Link
           href="/"
-          className="font-headline-md text-headline-md text-primary tracking-widest uppercase absolute left-1/2 -translate-x-1/2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+          className="font-headline-md text-base text-primary tracking-widest uppercase absolute left-1/2 -translate-x-1/2 hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
         >
           SAROJ COUTURE
         </Link>

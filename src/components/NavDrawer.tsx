@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Category } from "@/lib/supabase/types";
@@ -12,6 +12,23 @@ interface NavDrawerProps {
 export default function NavDrawer({ categories = [] }: NavDrawerProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+
+  // Close on Escape and lock background scroll while the drawer is open
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    const { overflow } = document.body.style;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = overflow;
+    };
+  }, [open]);
 
   return (
     <>
@@ -27,13 +44,13 @@ export default function NavDrawer({ categories = [] }: NavDrawerProps) {
       </button>
 
       {/* Backdrop */}
-      {open && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs transition-opacity duration-300"
-          aria-hidden="true"
-          onClick={() => setOpen(false)}
-        />
-      )}
+      <div
+        className={`fixed inset-0 z-40 bg-black/50 backdrop-blur-xs transition-opacity duration-300 ${
+          open ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+        aria-hidden="true"
+        onClick={() => setOpen(false)}
+      />
 
       {/* Drawer */}
       <aside
