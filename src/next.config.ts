@@ -13,6 +13,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  devIndicators: false,
   // The app lives in src/ but a root-level package.json (for the Supabase
   // CLI devDependency) gives the workspace a second lockfile — pin the
   // Turbopack root here so it doesn't have to guess between the two.
