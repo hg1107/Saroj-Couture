@@ -8,10 +8,15 @@ import { SEO } from "@/lib/utils/constants";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import WhatsAppFab from "@/components/WhatsAppFab";
+import Breadcrumbs from "@/components/Breadcrumbs";
+import BreadcrumbJsonLd from "@/components/seo/BreadcrumbJsonLd";
+
+const GALLERY_BREADCRUMBS = [{ label: "Home", href: "/" }, { label: "Gallery" }];
 
 export const metadata: Metadata = {
   title: "Gallery & Collections — Saroj Couture | Nagpur",
   description: "Browse the full collection of bespoke designer wear, bridal lehengas, silk sarees, and custom outfits at Saroj Couture, Nagpur.",
+  alternates: { canonical: `${SEO.siteUrl}/gallery` },
   openGraph: {
     title: "Gallery & Collections — Saroj Couture | Nagpur",
     description: "Browse the full collection of bespoke designer wear, bridal lehengas, silk sarees, and custom outfits at Saroj Couture, Nagpur.",
@@ -27,9 +32,14 @@ export default async function GalleryPage() {
 
   return (
     <>
+      <BreadcrumbJsonLd items={GALLERY_BREADCRUMBS} />
       <SiteHeader categories={categories} />
 
-      <main className="w-full max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop pb-section-gap pt-10 mt-14 flex flex-col gap-10">
+      <main className="w-full max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop pb-20 md:pb-section-gap pt-[4.5rem] flex flex-col gap-10">
+        <div className="pt-6">
+          <Breadcrumbs items={GALLERY_BREADCRUMBS} />
+        </div>
+
         {/* ── Gallery Header ────────────────────────────────────────────── */}
         <div className="flex flex-col items-center text-center max-w-xl mx-auto pt-4">
           <span className="font-label-md text-label-md text-secondary uppercase tracking-widest font-medium mb-2">
@@ -96,6 +106,7 @@ export default async function GalleryPage() {
                         alt={coverImg.alt_text ?? defaultImageAlt(garment.title, garment.categories?.name)}
                         width={280}
                         height={373}
+                        sizes="(max-width: 639px) 45vw, (max-width: 767px) 30vw, 280px"
                         className="w-full h-full object-cover rounded-xs transition-transform duration-700 group-hover:scale-105"
                       />
                     ) : (

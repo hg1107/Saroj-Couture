@@ -19,6 +19,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 1,
   };
 
+  const staticEntries: MetadataRoute.Sitemap = [
+    {
+      url: `${SEO.siteUrl}/about`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
+      url: `${SEO.siteUrl}/gallery`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${SEO.siteUrl}/contact`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.6,
+    },
+  ];
+
   const categoryEntries: MetadataRoute.Sitemap = categories.map((c) => ({
     url: `${SEO.siteUrl}/category/${c.slug}`,
     lastModified: new Date(c.updated_at),
@@ -33,5 +54,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [homeEntry, ...categoryEntries, ...garmentEntries];
+  return [homeEntry, ...staticEntries, ...categoryEntries, ...garmentEntries];
 }

@@ -1,13 +1,19 @@
 import type { Metadata } from "next";
 import { getCategories } from "@/lib/queries/categories";
-import { BUSINESS, CONTACT, SEO } from "@/lib/utils/constants";
+import { BUSINESS, CONTACT, SEO, MAPS_URL } from "@/lib/utils/constants";
+import { buildWhatsAppMessageLink } from "@/lib/utils/whatsapp";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import WhatsAppFab from "@/components/WhatsAppFab";
+import Breadcrumbs from "@/components/Breadcrumbs";
+import BreadcrumbJsonLd from "@/components/seo/BreadcrumbJsonLd";
+
+const CONTACT_BREADCRUMBS = [{ label: "Home", href: "/" }, { label: "Contact" }];
 
 export const metadata: Metadata = {
   title: "Contact & Atelier Location — Saroj Couture | Nagpur",
   description: "Visit or contact Saroj Couture in Teka Naka, Kamptee Road, Nagpur. Book a custom fitting consultation or enquire on WhatsApp.",
+  alternates: { canonical: `${SEO.siteUrl}/contact` },
   openGraph: {
     title: "Contact & Atelier Location — Saroj Couture | Nagpur",
     description: "Visit or contact Saroj Couture in Teka Naka, Kamptee Road, Nagpur. Book a custom fitting consultation or enquire on WhatsApp.",
@@ -17,13 +23,20 @@ export const metadata: Metadata = {
 
 export default async function ContactPage() {
   const categories = await getCategories();
-  const whatsappUrl = `https://wa.me/${CONTACT.whatsapp.replace(/[^0-9]/g, "")}?text=${encodeURIComponent("Hi Saroj Couture, I would like to enquire about an appointment or custom stitching.")}`;
+  const whatsappUrl = buildWhatsAppMessageLink(
+    "Hi Saroj Couture, I would like to enquire about an appointment or custom stitching."
+  );
 
   return (
     <>
+      <BreadcrumbJsonLd items={CONTACT_BREADCRUMBS} />
       <SiteHeader categories={categories} />
 
-      <main className="w-full max-w-[1000px] mx-auto px-margin-mobile md:px-margin-desktop pb-section-gap pt-10 mt-14 flex flex-col gap-12">
+      <main className="w-full max-w-[1000px] mx-auto px-margin-mobile md:px-margin-desktop pb-20 md:pb-section-gap pt-[4.5rem] flex flex-col gap-12">
+        <div className="pt-6">
+          <Breadcrumbs items={CONTACT_BREADCRUMBS} />
+        </div>
+
         {/* ── Header ────────────────────────────────────────────────────── */}
         <div className="flex flex-col items-center text-center max-w-xl mx-auto pt-4">
           <span className="font-label-md text-label-md text-secondary uppercase tracking-widest font-medium mb-2">
@@ -133,7 +146,7 @@ export default async function ContactPage() {
 
               <div className="pt-4 border-t border-outline-variant/50">
                 <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${BUSINESS.locality}, ${BUSINESS.city}, ${BUSINESS.state} ${BUSINESS.postalCode}`)}`}
+                  href={MAPS_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full bg-secondary text-on-secondary font-label-lg text-xs uppercase tracking-widest py-3 rounded-xs flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"

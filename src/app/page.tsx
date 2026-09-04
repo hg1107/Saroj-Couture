@@ -4,7 +4,8 @@ import Link from "next/link";
 import { getCategories } from "@/lib/queries/categories";
 import { getFeaturedGarments, formatPrice } from "@/lib/queries/garments";
 import { defaultImageAlt } from "@/lib/utils/format";
-import { SEO, CONTACT, BUSINESS } from "@/lib/utils/constants";
+import { SEO, BUSINESS } from "@/lib/utils/constants";
+import { buildWhatsAppMessageLink } from "@/lib/utils/whatsapp";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import WhatsAppFab from "@/components/WhatsAppFab";
@@ -18,6 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: { absolute: TITLE },
     description: DESCRIPTION,
+    alternates: { canonical: SEO.siteUrl },
     openGraph: {
       title: TITLE,
       description: DESCRIPTION,
@@ -32,14 +34,16 @@ export default async function HomePage() {
     getFeaturedGarments(),
   ]);
 
-  const whatsappConsultUrl = `https://wa.me/${CONTACT.whatsapp.replace(/[^0-9]/g, "")}?text=${encodeURIComponent("Hi Saroj Couture, I'm interested in custom stitching / bespoke design consultation.")}`;
+  const whatsappConsultUrl = buildWhatsAppMessageLink(
+    "Hi Saroj Couture, I'm interested in custom stitching / bespoke design consultation."
+  );
 
   return (
     <>
       <LocalBusinessJsonLd />
       <SiteHeader categories={categories} />
 
-      <main className="pt-[4.5rem] pb-16 max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop w-full flex flex-col gap-10 md:gap-12">
+      <main className="pt-[4.5rem] pb-20 md:pb-section-gap max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop w-full flex flex-col gap-20 md:gap-section-gap">
         {/* ── Editorial Atelier Hero Section ──────────────────────────── */}
         <section
           aria-label="Hero"
@@ -140,6 +144,7 @@ export default async function HomePage() {
                         alt={cat.name}
                         width={200}
                         height={267}
+                        sizes="(max-width: 639px) 45vw, (max-width: 767px) 30vw, (max-width: 1023px) 23vw, 178px"
                         className="w-full h-full object-cover rounded-xs transition-transform duration-500 group-hover:scale-105"
                       />
                     ) : (
@@ -198,6 +203,7 @@ export default async function HomePage() {
                           alt={coverImg.alt_text ?? defaultImageAlt(garment.title, garment.categories?.name)}
                           width={280}
                           height={373}
+                          sizes="(max-width: 639px) 45vw, (max-width: 767px) 30vw, 280px"
                           className="w-full h-full object-cover rounded-xs transition-transform duration-700 group-hover:scale-105"
                         />
                       ) : (

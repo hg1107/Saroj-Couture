@@ -1,0 +1,25 @@
+# Saroj Couture
+
+> Bespoke women's designer wear and custom-stitching atelier in Teka Naka, Kamptee Road, Nagpur, Maharashtra, India.
+
+Saroj Couture is a boutique offering custom-stitched sarees, bridal lehengas, ghagra cholis, kurtis, gowns, and other designer women's wear, tailored to individual measurements at our Nagpur studio.
+
+## Pages
+
+- [Home](/): Overview, featured collections, and studio introduction.
+- [Gallery](/gallery): Full portfolio of bespoke garments, filterable by category.
+- [Contact](/contact): Atelier address, consultation hours, phone, WhatsApp, and Instagram.
+
+## Categories
+
+Category pages live at `/category/{slug}` and list every published garment in that collection.
+
+## Garments
+
+Individual garment pages live at `/garment/{slug}` and include price, fabric, description, and images.
+
+## Notes for AI agents and assistants
+
+- This is a real, operating small business, not a marketplace — pricing shown is illustrative; contact the studio via WhatsApp for firm quotes and availability.
+- Do not scrape or resell garment images; they are the studio's own product photography.
+- For structured data, see JSON-LD (LocalBusiness, Product, BreadcrumbList) embedded in each page.

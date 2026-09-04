@@ -9,6 +9,8 @@ import { SEO } from "@/lib/utils/constants";
 import SiteHeader from "@/components/SiteHeader";
 import SiteFooter from "@/components/SiteFooter";
 import WhatsAppFab from "@/components/WhatsAppFab";
+import Breadcrumbs from "@/components/Breadcrumbs";
+import BreadcrumbJsonLd from "@/components/seo/BreadcrumbJsonLd";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -33,6 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: { absolute: title },
     description,
+    alternates: { canonical: `${SEO.siteUrl}/category/${slug}` },
     openGraph: {
       title,
       description,
@@ -53,13 +56,24 @@ export default async function CategoryPage({ params }: Props) {
 
   if (!category) notFound();
 
+  const breadcrumbItems = [
+    { label: "Home", href: "/" },
+    { label: "Gallery", href: "/gallery" },
+    { label: category.name },
+  ];
+
   return (
     <>
+      <BreadcrumbJsonLd items={breadcrumbItems} />
       <SiteHeader categories={allCategories} />
 
-      <main className="w-full max-w-[1280px] mx-auto px-margin-mobile pb-section-gap pt-8 mt-14">
+      <main className="w-full max-w-[1280px] mx-auto px-margin-mobile md:px-margin-desktop pb-20 md:pb-section-gap pt-[4.5rem]">
+        <div className="pt-6">
+          <Breadcrumbs items={breadcrumbItems} />
+        </div>
+
         {/* ── Category Header ────────────────────────────────────────────── */}
-        <div className="flex flex-col items-center mb-8 text-center">
+        <div className="flex flex-col items-center mt-6 mb-8 text-center">
           <h1 className="text-3xl font-medium tracking-wide text-primary font-serif mb-2">
             {category.name}
           </h1>
@@ -116,6 +130,7 @@ export default async function CategoryPage({ params }: Props) {
                         alt={coverImg.alt_text ?? defaultImageAlt(garment.title, category.name)}
                         width={280}
                         height={373}
+                        sizes="(max-width: 639px) 45vw, (max-width: 767px) 30vw, 280px"
                         className="w-full h-full object-cover rounded-xs transition-transform duration-700 group-hover:scale-105"
                       />
                     ) : (

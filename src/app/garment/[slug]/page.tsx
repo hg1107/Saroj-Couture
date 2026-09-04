@@ -5,11 +5,15 @@ import Image from "next/image";
 import { getGarmentBySlug, getGarmentsByCategory, formatPrice } from "@/lib/queries/garments";
 import { getCategories } from "@/lib/queries/categories";
 import { defaultImageAlt } from "@/lib/utils/format";
-import { SEO } from "@/lib/utils/constants";
+import { SEO, CONTACT } from "@/lib/utils/constants";
+import { buildWhatsAppMessageLink } from "@/lib/utils/whatsapp";
 import SiteHeader from "@/components/SiteHeader";
+import SiteFooter from "@/components/SiteFooter";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import GarmentImageCarousel from "@/components/GarmentImageCarousel";
 import WhatsAppFab from "@/components/WhatsAppFab";
 import ProductJsonLd from "@/components/seo/ProductJsonLd";
+import BreadcrumbJsonLd from "@/components/seo/BreadcrumbJsonLd";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -30,6 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: { absolute: title },
     description,
+    alternates: { canonical: `${SEO.siteUrl}/garment/${slug}` },
     openGraph: {
       title,
       description,
@@ -55,6 +60,13 @@ export default async function GarmentDetailPage({ params }: Props) {
 
   const whatsappMsg = `Hi, I'm interested in the "${garment.title}" from Saroj Couture. Can you share more details?`;
 
+  const breadcrumbItems = [
+    { label: "Home", href: "/" },
+    { label: "Gallery", href: "/gallery" },
+    ...(garment.categories ? [{ label: garment.categories.name, href: `/category/${garment.categories.slug}` }] : []),
+    { label: garment.title },
+  ];
+
   return (
     <>
       <ProductJsonLd
@@ -65,11 +77,16 @@ export default async function GarmentDetailPage({ params }: Props) {
         images={garment.images.map((img) => img.url)}
         slug={garment.slug}
       />
+      <BreadcrumbJsonLd items={breadcrumbItems} />
       <SiteHeader categories={categories} />
 
-      <main className="flex-grow pt-[4.5rem] pb-24 px-margin-mobile md:px-margin-desktop max-w-5xl mx-auto w-full flex flex-col gap-10">
+      <main className="flex-grow pt-[4.5rem] pb-20 md:pb-section-gap px-margin-mobile md:px-margin-desktop max-w-5xl mx-auto w-full flex flex-col gap-10">
+        <div className="pt-6">
+          <Breadcrumbs items={breadcrumbItems} />
+        </div>
+
         {/* ── Back navigation ───────────────────────────────────────────── */}
-        <div className="flex items-center gap-2 pt-2">
+        <div className="flex items-center gap-2">
           <Link
             href={categorySlug ? `/category/${categorySlug}` : "/"}
             aria-label="Go back"
@@ -133,7 +150,7 @@ export default async function GarmentDetailPage({ params }: Props) {
             {/* CTA — WhatsApp Enquiry */}
             <section className="flex flex-col gap-3">
               <a
-                href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? ""}?text=${encodeURIComponent(whatsappMsg)}`}
+                href={buildWhatsAppMessageLink(whatsappMsg)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full bg-secondary text-on-secondary font-label-lg text-label-lg uppercase tracking-widest py-4 rounded-sm flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.99] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-secondary shadow-xs"
@@ -145,32 +162,26 @@ export default async function GarmentDetailPage({ params }: Props) {
 
             {/* Contact Links */}
             <section className="flex justify-start gap-8 py-2">
-              {process.env.NEXT_PUBLIC_PHONE_NUMBER && (
-                <a
-                  href={`tel:${process.env.NEXT_PUBLIC_PHONE_NUMBER}`}
-                  className="font-label-md text-label-md text-primary hover:text-secondary uppercase tracking-widest border-b border-transparent hover:border-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
-                >
-                  Call
-                </a>
-              )}
-              {process.env.NEXT_PUBLIC_EMAIL && (
-                <a
-                  href={`mailto:${process.env.NEXT_PUBLIC_EMAIL}`}
-                  className="font-label-md text-label-md text-primary hover:text-secondary uppercase tracking-widest border-b border-transparent hover:border-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
-                >
-                  Email
-                </a>
-              )}
-              {process.env.NEXT_PUBLIC_INSTAGRAM_URL && (
-                <a
-                  href={process.env.NEXT_PUBLIC_INSTAGRAM_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-label-md text-label-md text-primary hover:text-secondary uppercase tracking-widest border-b border-transparent hover:border-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
-                >
-                  Instagram
-                </a>
-              )}
+              <a
+                href={`tel:${CONTACT.phone}`}
+                className="font-label-md text-label-md text-primary hover:text-secondary uppercase tracking-widest border-b border-transparent hover:border-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+              >
+                Call
+              </a>
+              <a
+                href={`mailto:${CONTACT.email}`}
+                className="font-label-md text-label-md text-primary hover:text-secondary uppercase tracking-widest border-b border-transparent hover:border-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+              >
+                Email
+              </a>
+              <a
+                href={CONTACT.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-label-md text-label-md text-primary hover:text-secondary uppercase tracking-widest border-b border-transparent hover:border-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+              >
+                Instagram
+              </a>
             </section>
           </div>
         </div>
@@ -197,6 +208,7 @@ export default async function GarmentDetailPage({ params }: Props) {
                         alt={img.alt_text ?? defaultImageAlt(g.title, g.categories?.name)}
                         width={160}
                         height={213}
+                        sizes="160px"
                         className="w-full h-full object-cover"
                       />
                     ) : (
@@ -212,6 +224,7 @@ export default async function GarmentDetailPage({ params }: Props) {
         )}
       </main>
 
+      <SiteFooter />
       <WhatsAppFab message={whatsappMsg} label={`Enquire about ${garment.title} on WhatsApp`} />
     </>
   );

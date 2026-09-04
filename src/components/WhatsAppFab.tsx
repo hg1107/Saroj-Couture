@@ -1,5 +1,7 @@
 "use client";
 
+import { buildWhatsAppMessageLink } from "@/lib/utils/whatsapp";
+
 interface WhatsAppFabProps {
   /** Pre-filled message text (optional) */
   message?: string;
@@ -8,9 +10,7 @@ interface WhatsAppFabProps {
 }
 
 export default function WhatsAppFab({ message, label = "Enquire on WhatsApp" }: WhatsAppFabProps) {
-  const number = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "";
-  const encoded = message ? encodeURIComponent(message) : "";
-  const href = `https://wa.me/${number}${encoded ? `?text=${encoded}` : ""}`;
+  const href = buildWhatsAppMessageLink(message);
 
   return (
     <a

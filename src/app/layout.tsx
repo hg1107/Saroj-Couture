@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Karla, Libre_Caslon_Text } from "next/font/google";
+import { BUSINESS } from "@/lib/utils/constants";
+import OrganizationJsonLd from "@/components/seo/OrganizationJsonLd";
 import "./globals.css";
 
 // ─── Brand fonts (Atelier Heritage design spec) ───────────────────────────
@@ -28,10 +30,16 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
   ),
+  applicationName: BUSINESS.name,
+  // Overrides Next.js's default `<meta name="generator" content="Next.js ...">` tag.
+  generator: BUSINESS.name,
   openGraph: {
     siteName: "Saroj Couture",
     locale: "en_IN",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
   },
 };
 
@@ -49,7 +57,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <OrganizationJsonLd />
+        {children}
+      </body>
     </html>
   );
 }

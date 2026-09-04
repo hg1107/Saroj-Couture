@@ -30,6 +30,12 @@ export const BUSINESS = {
   openingHours: "Mo-Sa 10:00-19:00",
 } as const;
 
+// ─── Derived ──────────────────────────────────────────────────────────────
+/** Google Maps search link for the boutique's locality — shared by the contact CTA and LocalBusiness schema. */
+export const MAPS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+  `${BUSINESS.name}, ${BUSINESS.locality}, ${BUSINESS.city}, ${BUSINESS.state} ${BUSINESS.postalCode}`
+)}`;
+
 // ─── SEO ──────────────────────────────────────────────────────────────────
 export const SEO = {
   /** Site base URL — override with NEXT_PUBLIC_SITE_URL env var */

@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { logoutAction } from "@/lib/actions/auth";
+
+export const metadata: Metadata = {
+  title: { default: "Admin Dashboard", template: "%s | Admin — Saroj Couture" },
+  robots: { index: false, follow: false },
+};
 
 /** AdminHeader — fixed top bar for the authenticated admin dashboard. */
 function AdminHeader() {

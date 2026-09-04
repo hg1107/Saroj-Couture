@@ -132,6 +132,20 @@ export default function NavDrawer({ categories = [] }: NavDrawerProps) {
             )}
 
             <Link
+              href="/about"
+              aria-current={pathname === "/about" ? "page" : undefined}
+              onClick={() => setOpen(false)}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xs font-label-lg text-label-lg uppercase tracking-widest transition-colors ${
+                pathname === "/about"
+                  ? "bg-surface-container text-secondary font-bold border-l-2 border-secondary"
+                  : "text-primary hover:bg-surface-container hover:text-secondary"
+              }`}
+            >
+              <span className="material-symbols-outlined text-xl">info</span>
+              About
+            </Link>
+
+            <Link
               href="/contact"
               aria-current={pathname === "/contact" ? "page" : undefined}
               onClick={() => setOpen(false)}

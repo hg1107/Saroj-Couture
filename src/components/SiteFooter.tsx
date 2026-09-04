@@ -18,6 +18,12 @@ export default function SiteFooter() {
           </a>
           <a
             className="font-label-md text-xs text-on-surface-variant hover:text-secondary transition-colors uppercase tracking-widest font-medium"
+            href="/about"
+          >
+            About
+          </a>
+          <a
+            className="font-label-md text-xs text-on-surface-variant hover:text-secondary transition-colors uppercase tracking-widest font-medium"
             href="/contact"
           >
             Atelier Location &amp; Contact
