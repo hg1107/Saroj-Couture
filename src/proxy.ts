@@ -1,5 +1,5 @@
-import { updateSession } from "@/lib/supabase/middleware";
-import type { NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
+import { SESSION_COOKIE, getUserForToken } from "@/lib/auth/session";
 
 const isDev = process.env.NODE_ENV !== "production";
 
@@ -15,9 +15,9 @@ function buildCsp(nonce: string): string {
     // only be allowed via 'unsafe-inline' — nonces/hashes only cover <style>
     // elements, not the style="" attribute — so this one stays broad.
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "img-src 'self' data: blob: https://*.supabase.co",
+    "img-src 'self' data: blob:",
     "font-src 'self' data: https://fonts.gstatic.com",
-    "connect-src 'self' https://*.supabase.co",
+    "connect-src 'self'",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -25,21 +25,47 @@ function buildCsp(nonce: string): string {
   ].join("; ");
 }
 
+// Admin routes reachable without a session.
+const PUBLIC_ADMIN_PATHS = ["/admin/login", "/admin/forgot-password"];
+
 /**
- * Next.js proxy (formerly "middleware") — runs at the edge on every matched request.
+ * Next.js proxy (formerly "middleware") — runs on every matched request.
  * 1. Generates a per-request CSP nonce and sets the Content-Security-Policy header
  *    (Next automatically applies the same nonce to its own inline bootstrap scripts).
- * 2. Refreshes the Supabase auth session (required for Server Components).
- * 3. Guards /admin/* routes — redirects unauthenticated users to /admin/login.
- * 4. Redirects authenticated users away from /admin/login back to /admin/garments.
+ * 2. Redirects signed-out visitors from /admin/* to /admin/login, and signed-in
+ *    ones from /admin/login to /admin/garments. This is a convenience only — the
+ *    dashboard layout, every admin query/action, and every admin API route
+ *    check the session themselves.
  *
- * In Next.js 16 the file is named proxy.ts and the export is `proxy` (or default).
+ * In Next.js 16 the file is named proxy.ts, runs on the Node.js runtime, and the
+ * export is `proxy` (or default).
  */
 export async function proxy(request: NextRequest) {
   const nonce = crypto.randomUUID().replace(/-/g, "");
   const csp = buildCsp(nonce);
+  const pathname = request.nextUrl.pathname;
 
-  const response = await updateSession(request, nonce);
+  let redirectTo: string | null = null;
+  if (pathname.startsWith("/admin")) {
+    const user = await getUserForToken(request.cookies.get(SESSION_COOKIE)?.value);
+    if (!user && !PUBLIC_ADMIN_PATHS.includes(pathname)) redirectTo = "/admin/login";
+    else if (user && pathname === "/admin/login") redirectTo = "/admin/garments";
+  }
+
+  let response: NextResponse;
+  if (redirectTo) {
+    const url = request.nextUrl.clone();
+    url.pathname = redirectTo;
+    url.search = "";
+    response = NextResponse.redirect(url);
+  } else {
+    // Forward the nonce so Server Components can read it via headers() if
+    // they ever need to nonce a custom inline script.
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-nonce", nonce);
+    response = NextResponse.next({ request: { headers: requestHeaders } });
+  }
+
   response.headers.set("Content-Security-Policy", csp);
   return response;
 }
@@ -51,8 +77,11 @@ export const config = {
      * - _next/static  (static files)
      * - _next/image   (image optimisation)
      * - favicon.ico   (favicon)
+     * - api/          (JSON routes — no HTML to protect with a CSP, and the
+     *                  proxy would otherwise buffer large photo uploads in memory)
+     * - media/        (garment photos, served by app/media/[...path])
      * - public folder assets
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/|media/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

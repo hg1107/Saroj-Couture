@@ -2,8 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { createServerClient } from "@/lib/supabase/server";
+import { sql } from "@/lib/db";
 import { checkRateLimit } from "@/lib/utils/rate-limit";
+import { MIN_PASSWORD_LENGTH, getDummyHash, hashPassword, verifyPassword } from "@/lib/auth/password";
+import { createSession, destroyOtherSessions, destroySession, requireOwner } from "@/lib/auth/session";
 
 /** Generic message shown for any failed login — never reveals whether the
  * email exists, whether it's the password that's wrong, or any other detail. */
@@ -22,89 +24,68 @@ export async function loginAction(
   _prev: { error?: string } | undefined,
   formData: FormData
 ) {
-  const email    = String(formData.get("email") ?? "");
+  const email    = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
 
   // Keyed by IP+email so one bad actor can't lock out a legitimate email
   // from a different IP, while still capping attempts per source.
-  const key = `login:${await clientIp()}:${email.toLowerCase()}`;
+  const key = `login:${await clientIp()}:${email}`;
   if (!(await checkRateLimit(key, LOGIN_ATTEMPT_LIMIT, LOGIN_WINDOW_MS))) {
     return { error: TOO_MANY_ATTEMPTS_MESSAGE };
   }
 
-  const supabase = await createServerClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-  if (error) {
+  const [user] = await sql<{ id: string; password_hash: string }[]>`
+    SELECT id, password_hash FROM admin_users WHERE email = ${email}
+  `;
+  // Always run one scrypt verification so response time doesn't reveal
+  // whether the email exists.
+  const ok = await verifyPassword(password, user?.password_hash ?? (await getDummyHash()));
+  if (!user || !ok) {
     return { error: INVALID_CREDENTIALS_MESSAGE };
   }
 
+  await createSession(user.id);
   redirect("/admin/garments");
 }
 
-/** Alias for backward compat */
-export const login = loginAction;
-
 export async function logoutAction() {
-  const supabase = await createServerClient();
-  await supabase.auth.signOut();
+  await destroySession();
   redirect("/admin/login");
 }
 
-/** Alias */
-export const logout = logoutAction;
-
-type ResetRequestState = { error?: string; success: boolean };
-
-const RESET_ATTEMPT_LIMIT = 5;
-const RESET_WINDOW_MS = 15 * 60 * 1000;
-
-export async function requestPasswordResetAction(
-  _prev: ResetRequestState,
-  formData: FormData
-): Promise<ResetRequestState> {
-  const email = String(formData.get("email") ?? "");
-
-  // Returns the same success response either way, same as below — this
-  // just caps how many reset emails one source can trigger.
-  const key = `reset:${await clientIp()}:${email.toLowerCase()}`;
-  if (!(await checkRateLimit(key, RESET_ATTEMPT_LIMIT, RESET_WINDOW_MS))) {
-    return { success: true };
-  }
-
-  const supabase = await createServerClient();
-  await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/admin/reset-password`,
-  });
-
-  // Always report success, whether or not the email exists — Supabase itself
-  // doesn't leak account existence here, and neither should we.
-  return { success: true };
+export interface ChangePasswordState {
+  error?: string;
+  success?: boolean;
 }
 
-/** Alias for backward compat */
-export const resetPassword = requestPasswordResetAction;
-
-export async function updatePasswordAction(
-  _prev: { error?: string } | undefined,
+export async function changePasswordAction(
+  _prev: ChangePasswordState | undefined,
   formData: FormData
-) {
-  const password = String(formData.get("password") ?? "");
+): Promise<ChangePasswordState> {
+  const owner           = await requireOwner();
+  const currentPassword = String(formData.get("currentPassword") ?? "");
+  const password        = String(formData.get("password") ?? "");
   const confirmPassword = String(formData.get("confirmPassword") ?? "");
 
-  if (password.length < 8) {
-    return { error: "Password must be at least 8 characters." };
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return { error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` };
   }
   if (password !== confirmPassword) {
     return { error: "Passwords do not match." };
   }
 
-  const supabase = await createServerClient();
-  const { error } = await supabase.auth.updateUser({ password });
-
-  if (error) {
-    return { error: "Could not update password. Please request a new reset link." };
+  if (!(await checkRateLimit(`change-password:${owner.id}`, LOGIN_ATTEMPT_LIMIT, LOGIN_WINDOW_MS))) {
+    return { error: TOO_MANY_ATTEMPTS_MESSAGE };
   }
 
-  redirect("/admin/garments");
+  const [row] = await sql<{ password_hash: string }[]>`
+    SELECT password_hash FROM admin_users WHERE id = ${owner.id}
+  `;
+  if (!row || !(await verifyPassword(currentPassword, row.password_hash))) {
+    return { error: "Current password is incorrect." };
+  }
+
+  await sql`UPDATE admin_users SET password_hash = ${await hashPassword(password)} WHERE id = ${owner.id}`;
+  await destroyOtherSessions(owner.id);
+  return { success: true };
 }

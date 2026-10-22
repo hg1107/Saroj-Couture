@@ -18,21 +18,17 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // Never ship readable source maps to the browser in production.
   productionBrowserSourceMaps: false,
-  // The app lives in src/ but a root-level package.json (for the Supabase
-  // CLI devDependency) gives the workspace a second lockfile — pin the
-  // Turbopack root here so it doesn't have to guess between the two.
+  // Self-contained server bundle (.next/standalone) for the Docker image.
+  output: "standalone",
+  // Pin the Turbopack root to this folder (the repo root above it isn't an npm package).
   turbopack: {
     root: path.join(__dirname),
   },
   images: {
-    remotePatterns: [
-      {
-        // Supabase Storage CDN — replace <your-project-ref> with your actual ref
-        protocol: "https",
-        hostname: "*.supabase.co",
-        pathname: "/storage/v1/object/public/**",
-      },
-    ],
+    // Photos are pre-rendered at upload into thumb/medium/large WebP files;
+    // this loader just picks the right one per width instead of letting Next
+    // re-encode them at lower quality.
+    loaderFile: "./lib/image-loader.ts",
   },
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];

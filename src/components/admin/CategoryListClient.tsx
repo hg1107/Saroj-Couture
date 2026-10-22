@@ -4,7 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { Category } from "@/lib/supabase/types";
+import type { Category } from "@/lib/db/types";
 import {
   deleteCategory,
   toggleCategoryVisibility,
@@ -79,8 +79,13 @@ export default function CategoryListClient({ categories: initial, garmentCounts 
     if (!file || !targetId) return;
     startT(async () => {
       const fd = new FormData();
-      fd.set("cover_image", file);
-      await updateCategory(targetId, undefined, fd);
+      fd.set("file", file);
+      fd.set("categoryId", targetId);
+      const res = await fetch("/api/admin/category-covers", { method: "POST", body: fd });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setAddError(data?.error ?? "Cover upload failed.");
+      }
       router.refresh();
     });
   }

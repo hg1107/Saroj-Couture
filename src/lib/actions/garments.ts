@@ -1,81 +1,89 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createServerClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { sql, type Tx } from "@/lib/db";
+import { requireOwner } from "@/lib/auth/session";
 import { slugify, uniqueSlug } from "@/lib/utils/slug";
-import { STORAGE } from "@/lib/utils/constants";
-import { garmentImagePaths, isValidImageId } from "@/lib/utils/garment-image-paths";
+import { isUuid, publicUrl, removeStored } from "@/lib/storage";
+import { readStoredMeta, type StoredImageMeta } from "@/lib/utils/image-processing";
+import { ADMIN } from "@/lib/utils/constants";
 
 export interface GarmentFormState {
   error?: string;
   success?: boolean;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type AnySupabase = any;
-
-async function db(): Promise<AnySupabase> {
-  return (await createServerClient()) as AnySupabase;
-}
-
 // ─── Images ─────────────────────────────────────────────────────────────────
-// Photos are uploaded (and processed into full + thumbnail WebP renditions)
-// server-side by /api/admin/garment-images as soon as they're picked in the
-// form — by the time the garment is saved, each already-uploaded image's id
-// (which doubles as its Storage path segment), full URL, and thumbnail URL
-// arrive as parallel hidden-field arrays, in the order the owner arranged
-// them (index 0 = cover). Each save replaces the garment's image rows with
-// that submitted set, reusing the same ids the Storage objects were written
-// under so a later edit can still resolve their paths (e.g. to delete them).
+// Photos are uploaded (original kept + WebP renditions rendered) by
+// /api/admin/garment-images as soon as they're picked in the form — by the
+// time the garment is saved, each already-uploaded image's id arrives as a
+// hidden-field array, in the order the owner arranged them (index 0 = cover).
+// Each save replaces the garment's image rows with that submitted set.
 
-async function saveGarmentImages(
-  supabase: AnySupabase,
-  garmentId: string,
-  formData: FormData
-): Promise<string | undefined> {
-  const ids = formData.getAll("image_ids").map(String);
-
-  const { error: delError } = await supabase.from("images").delete().eq("garment_id", garmentId);
-  if (delError) return delError.message;
-  if (ids.length === 0) return undefined;
-
-  if (ids.some((id) => !isValidImageId(id))) return "Invalid image id.";
-
-  // Derive each image's public URL from its Storage path server-side —
-  // never trust the client-submitted URL, only the id it was uploaded under.
-  const rows = ids.map((id, i) => {
-    const { fullPath, thumbPath } = garmentImagePaths(garmentId, id);
-    const { data: fullUrl }  = supabase.storage.from(STORAGE.garmentImages).getPublicUrl(fullPath);
-    const { data: thumbUrl } = supabase.storage.from(STORAGE.garmentImages).getPublicUrl(thumbPath);
-    return {
-      id,
-      garment_id: garmentId,
-      url: fullUrl.publicUrl,
-      thumbnail_url: thumbUrl.publicUrl,
-      display_order: i,
-      alt_text: null as string | null,
-    };
-  });
-  const { error: insError } = await supabase.from("images").insert(rows);
-  return insError?.message;
+interface ImageToSave {
+  id: string;
+  meta: StoredImageMeta;
 }
 
-/** Best-effort removal of every Storage object (full + thumb) belonging to
- * a garment's images. Called right before/after the DB rows are gone, so a
- * deleted garment never leaves its photos sitting in public Storage. */
-async function removeGarmentImageFiles(imageIds: string[], garmentId: string) {
-  if (imageIds.length === 0) return;
-  const paths = imageIds.flatMap((id) => {
-    const { fullPath, thumbPath } = garmentImagePaths(garmentId, id);
-    return [fullPath, thumbPath];
-  });
-  try {
-    const admin = createAdminClient();
-    await admin.storage.from(STORAGE.garmentImages).remove(paths);
-  } catch (err) {
-    console.error("Failed to clean up garment image files:", err);
+/** Validates the submitted image ids against what's actually on disk. */
+async function collectImages(garmentId: string, formData: FormData): Promise<ImageToSave[] | string> {
+  const ids = formData.getAll("image_ids").map(String);
+  if (ids.length > ADMIN.maxImagesPerGarment) return `At most ${ADMIN.maxImagesPerGarment} photos per garment.`;
+  if (ids.some((id) => !isUuid(id))) return "Invalid image id.";
+
+  const images: ImageToSave[] = [];
+  for (const id of ids) {
+    const meta = await readStoredMeta("garments", garmentId, id);
+    if (!meta) return "One of the photos is missing on the server — please remove it and upload it again.";
+    images.push({ id, meta });
   }
+  return images;
+}
+
+async function replaceGarmentImages(tx: Tx, garmentId: string, images: ImageToSave[]) {
+  await tx`DELETE FROM images WHERE garment_id = ${garmentId}`;
+  if (images.length === 0) return;
+
+  // URLs are derived server-side from the id — never taken from the client.
+  const rows = images.map(({ id, meta }, i) => ({
+    id,
+    garment_id: garmentId,
+    url: publicUrl("garments", garmentId, id, "large.webp"),
+    thumbnail_url: publicUrl("garments", garmentId, id, "thumb.webp"),
+    width: meta.width,
+    height: meta.height,
+    original_format: meta.format,
+    original_bytes: meta.bytes,
+    display_order: i,
+  }));
+  await tx`INSERT INTO images ${tx(rows)}`;
+}
+
+function readGarmentFields(formData: FormData) {
+  const priceType = String(formData.get("price_type") ?? "fixed");
+  const priceRaw  = String(formData.get("price") ?? "").trim();
+  const price     = priceType === "on_enquiry" || !priceRaw ? null : Math.round(Number(priceRaw));
+  return {
+    title:       String(formData.get("title") ?? "").trim(),
+    category_id: String(formData.get("category_id") ?? ""),
+    fabric:      String(formData.get("fabric") ?? "").trim() || null,
+    description: String(formData.get("description") ?? "").trim() || null,
+    price_type:  priceType,
+    price,
+    is_featured: formData.get("is_featured") === "on",
+    status:      formData.get("status") === "on" ? "published" : "hidden",
+  };
+}
+
+function validateGarmentFields(f: ReturnType<typeof readGarmentFields>): string | undefined {
+  if (!f.title || !f.category_id) return "Title and category are required.";
+  if (!isUuid(f.category_id)) return "Invalid category.";
+  if (!["fixed", "starting_from", "on_enquiry"].includes(f.price_type)) return "Invalid price type.";
+  if (f.price !== null && (!Number.isFinite(f.price) || f.price < 0)) return "Price must be a positive number.";
+  if (f.description && f.description.length > ADMIN.descriptionMaxLength) {
+    return `Description must be at most ${ADMIN.descriptionMaxLength} characters.`;
+  }
+  return undefined;
 }
 
 // ─── Create ───────────────────────────────────────────────────────────────────
@@ -84,43 +92,34 @@ export async function createGarment(
   _prev: GarmentFormState | undefined,
   formData: FormData
 ): Promise<GarmentFormState> {
-  const supabase    = await db();
-  const presetId    = String(formData.get("garment_id") ?? "") || undefined;
-  const title       = String(formData.get("title") ?? "").trim();
-  const categoryId  = String(formData.get("category_id") ?? "");
-  const fabric      = String(formData.get("fabric") ?? "").trim() || null;
-  const description = String(formData.get("description") ?? "").trim() || null;
-  const priceType   = String(formData.get("price_type") ?? "fixed");
-  const priceRaw    = formData.get("price");
-  const price       = priceType === "on_enquiry" || !priceRaw ? null : Number(priceRaw);
-  const isFeatured  = formData.get("is_featured") === "on";
-  const status      = formData.get("status") === "on" ? "published" : "hidden";
+  await requireOwner();
+  const fields = readGarmentFields(formData);
+  const invalid = validateGarmentFields(fields);
+  if (invalid) return { error: invalid };
 
-  if (!title || !categoryId) return { error: "Title and category are required." };
+  // Reuse the id the browser pre-generated for the photo upload folder.
+  const presetId = String(formData.get("garment_id") ?? "");
+  const id = isUuid(presetId) ? presetId : crypto.randomUUID();
 
-  const slug = await uniqueSlug(slugify(title), async (candidate) => {
-    const { data } = await supabase.from("garments").select("id").eq("slug", candidate).maybeSingle();
-    return !!data;
+  const images = await collectImages(id, formData);
+  if (typeof images === "string") return { error: images };
+
+  const slug = await uniqueSlug(slugify(fields.title) || "garment", async (candidate) => {
+    const rows = await sql`SELECT 1 FROM garments WHERE slug = ${candidate}`;
+    return rows.length > 0;
   });
-  // Reuse the id the browser pre-generated for the photo-upload Storage path
-  // (falls back to the DB default if it's somehow missing).
-  const row = { id: presetId, title, slug, category_id: categoryId, fabric, description, price, price_type: priceType, is_featured: isFeatured, status };
 
-  const { data: garment, error } = await supabase
-    .from("garments")
-    .insert(row)
-    .select("id")
-    .single();
-
-  if (error) return { error: error.message };
-
-  if (garment?.id) {
-    const imgError = await saveGarmentImages(supabase, garment.id, formData);
-    if (imgError) return { error: imgError };
+  try {
+    await sql.begin(async (tx) => {
+      await tx`INSERT INTO garments ${tx({ id, slug, ...fields })}`;
+      await replaceGarmentImages(tx, id, images);
+    });
+  } catch (err) {
+    console.error("createGarment failed:", err);
+    return { error: "Could not save this garment. Please try again." };
   }
 
-  revalidatePath("/");
-  revalidatePath("/admin/garments");
+  revalidatePath("/", "layout");
   return { success: true };
 }
 
@@ -131,69 +130,62 @@ export async function updateGarment(
   _prev: GarmentFormState | undefined,
   formData: FormData
 ): Promise<GarmentFormState> {
-  const supabase   = await db();
-  const priceType  = String(formData.get("price_type") ?? "fixed");
-  const priceRaw   = formData.get("price");
-  const price      = priceType === "on_enquiry" || !priceRaw ? null : Number(priceRaw);
-  const updates    = {
-    title:       String(formData.get("title") ?? "").trim() || undefined,
-    category_id: String(formData.get("category_id") ?? "") || undefined,
-    fabric:      String(formData.get("fabric") ?? "").trim() || null,
-    description: String(formData.get("description") ?? "").trim() || null,
-    price_type:  priceType,
-    price,
-    is_featured: formData.get("is_featured") === "on",
-    status:      formData.get("status") === "on" ? "published" : "hidden",
-  };
-  const { error } = await supabase.from("garments").update(updates).eq("id", id);
-  if (error) return { error: error.message };
+  await requireOwner();
+  if (!isUuid(id)) return { error: "Invalid garment." };
+  const fields = readGarmentFields(formData);
+  const invalid = validateGarmentFields(fields);
+  if (invalid) return { error: invalid };
 
-  const imgError = await saveGarmentImages(supabase, id, formData);
-  if (imgError) return { error: imgError };
+  const images = await collectImages(id, formData);
+  if (typeof images === "string") return { error: images };
 
-  revalidatePath("/");
-  revalidatePath(`/admin/garments/${id}`);
-  revalidatePath("/admin/garments");
+  try {
+    await sql.begin(async (tx) => {
+      await tx`UPDATE garments SET ${tx(fields)} WHERE id = ${id}`;
+      await replaceGarmentImages(tx, id, images);
+    });
+  } catch (err) {
+    console.error("updateGarment failed:", err);
+    return { error: "Could not save this garment. Please try again." };
+  }
+
+  revalidatePath("/", "layout");
   return { success: true };
 }
 
 // ─── Delete ───────────────────────────────────────────────────────────────────
 
 export async function deleteGarment(id: string): Promise<GarmentFormState> {
-  const supabase = await db();
+  await requireOwner();
+  if (!isUuid(id)) return { error: "Invalid garment." };
 
-  const { data: images } = await supabase.from("images").select("id").eq("garment_id", id);
-  const imageIds = ((images ?? []) as { id: string }[]).map((img) => img.id);
+  await sql`DELETE FROM garments WHERE id = ${id}`; // images rows cascade
+  // Removes every photo under this garment — including any uploaded but never saved.
+  await removeStored("garments", id).catch((err) =>
+    console.error("Failed to clean up garment image files:", err)
+  );
 
-  const { error } = await supabase.from("garments").delete().eq("id", id);
-  if (error) return { error: error.message };
-
-  await removeGarmentImageFiles(imageIds, id);
-
-  revalidatePath("/");
-  revalidatePath("/admin/garments");
+  revalidatePath("/", "layout");
   return { success: true };
 }
 
 // ─── Toggle status ────────────────────────────────────────────────────────────
 
 export async function toggleGarmentStatus(id: string, current: string): Promise<GarmentFormState> {
-  const supabase = await db();
-  const next     = current === "published" ? "hidden" : "published";
-  const { error } = await supabase.from("garments").update({ status: next }).eq("id", id);
-  if (error) return { error: error.message };
-  revalidatePath("/");
-  revalidatePath("/admin/garments");
+  await requireOwner();
+  if (!isUuid(id)) return { error: "Invalid garment." };
+  const next = current === "published" ? "hidden" : "published";
+  await sql`UPDATE garments SET status = ${next} WHERE id = ${id}`;
+  revalidatePath("/", "layout");
   return { success: true };
 }
 
 // ─── Toggle featured ──────────────────────────────────────────────────────────
 
 export async function toggleGarmentFeatured(id: string, current: boolean): Promise<GarmentFormState> {
-  const supabase = await db();
-  const { error } = await supabase.from("garments").update({ is_featured: !current }).eq("id", id);
-  if (error) return { error: error.message };
-  revalidatePath("/");
-  revalidatePath("/admin/garments");
+  await requireOwner();
+  if (!isUuid(id)) return { error: "Invalid garment." };
+  await sql`UPDATE garments SET is_featured = ${!current} WHERE id = ${id}`;
+  revalidatePath("/", "layout");
   return { success: true };
 }

@@ -1,51 +1,38 @@
 /**
  * Category query functions — server-side data fetching.
- * All public-facing queries use the anon client (RLS filters hidden categories).
- * Admin queries use the same client but are called from authenticated contexts.
+ * Public queries call connection() so pages render per request (always
+ * showing current data) instead of being prerendered at build time, when
+ * no database is available.
+ *
+ * Public queries filter out hidden categories explicitly; admin queries
+ * check the owner session first.
  */
-import { createServerClient } from "@/lib/supabase/server";
-import type { Category } from "@/lib/supabase/types";
+import { connection } from "next/server";
+import { sql } from "@/lib/db";
+import { requireOwner } from "@/lib/auth/session";
+import type { Category } from "@/lib/db/types";
 
-/** Public: visible categories ordered by display_order (anon RLS applies). */
+/** Public: visible categories ordered by display_order. */
 export async function getCategories(): Promise<Category[]> {
-  const supabase = await createServerClient();
-  const { data, error } = await supabase
-    .from("categories")
-    .select("*")
-    .eq("is_visible", true)
-    .order("display_order", { ascending: true });
-
-  if (error) throw new Error(`getCategories: ${error.message}`);
-  return data ?? [];
+  await connection();
+  return sql<Category[]>`
+    SELECT * FROM categories WHERE is_visible ORDER BY display_order ASC
+  `;
 }
 
 /** Public: single visible category by slug. Returns null if not found / hidden. */
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
-  const supabase = await createServerClient();
-  const { data, error } = await supabase
-    .from("categories")
-    .select("*")
-    .eq("slug", slug)
-    .eq("is_visible", true)
-    .single();
-
-  if (error) {
-    if (error.code === "PGRST116") return null; // not found
-    throw new Error(`getCategoryBySlug: ${error.message}`);
-  }
-  return data;
+  await connection();
+  const rows = await sql<Category[]>`
+    SELECT * FROM categories WHERE slug = ${slug} AND is_visible
+  `;
+  return rows[0] ?? null;
 }
 
 /** Admin: all categories including hidden ones, ordered by display_order. */
 export async function getAllCategoriesAdmin(): Promise<Category[]> {
-  const supabase = await createServerClient();
-  const { data, error } = await supabase
-    .from("categories")
-    .select("*")
-    .order("display_order", { ascending: true });
-
-  if (error) throw new Error(`getAllCategoriesAdmin: ${error.message}`);
-  return data ?? [];
+  await requireOwner();
+  return sql<Category[]>`SELECT * FROM categories ORDER BY display_order ASC`;
 }
 
 /**
@@ -53,16 +40,9 @@ export async function getAllCategoriesAdmin(): Promise<Category[]> {
  * Returns a map of category_id → count.
  */
 export async function getCategoryGarmentCounts(): Promise<Record<string, number>> {
-  const supabase = await createServerClient();
-  const { data, error } = await supabase
-    .from("garments")
-    .select("category_id");
-
-  if (error) throw new Error(`getCategoryGarmentCounts: ${error.message}`);
-
-  const counts: Record<string, number> = {};
-  for (const row of (data ?? []) as { category_id: string }[]) {
-    counts[row.category_id] = (counts[row.category_id] ?? 0) + 1;
-  }
-  return counts;
+  await requireOwner();
+  const rows = await sql<{ category_id: string; count: number }[]>`
+    SELECT category_id, count(*)::int AS count FROM garments GROUP BY category_id
+  `;
+  return Object.fromEntries(rows.map((r) => [r.category_id, r.count]));
 }

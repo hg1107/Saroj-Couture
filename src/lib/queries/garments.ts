@@ -1,180 +1,122 @@
 /**
  * Garment query functions — server-side data fetching.
- * Public queries rely on anon RLS: only published garments in visible categories.
+ *
+ * Public queries call connection() so pages render per request (always
+ * showing current data) instead of being prerendered at build time, when
+ * no database is available.
+ *
+ * Public queries must only ever return published garments in visible
+ * categories — PUBLIC_FILTER enforces that in every one of them. Admin
+ * queries check the owner session first.
  */
-import { createServerClient } from "@/lib/supabase/server";
-import type { GarmentWithImages, GarmentListItem } from "@/lib/supabase/types";
+import { connection } from "next/server";
+import { sql, type Fragment } from "@/lib/db";
+import { requireOwner } from "@/lib/auth/session";
+import { isUuid } from "@/lib/storage";
+import type { GarmentWithImages, GarmentListItem } from "@/lib/db/types";
 export { formatPrice } from "@/lib/utils/format";
 
-const COVER_IMAGE_SELECT = `
-  id,
-  title,
-  slug,
-  category_id,
-  fabric,
-  description,
-  price,
-  price_type,
-  is_featured,
-  status,
-  created_at,
-  updated_at,
-  categories ( name, slug ),
-  images ( id, url, thumbnail_url, alt_text, display_order )
-`.trim();
+const PUBLIC_FILTER = sql`g.status = 'published' AND c.is_visible`;
 
-/**
- * Public: featured garments (is_featured = true, published, visible category).
- * Returns garments with their cover image (display_order = 0).
- */
+/** Garment columns + category + compact image list, for grids and admin lists. */
+function listSelect(where: Fragment) {
+  return sql<GarmentListItem[]>`
+    SELECT g.*,
+           json_build_object('name', c.name, 'slug', c.slug) AS categories,
+           COALESCE((
+             SELECT json_agg(json_build_object(
+                      'id', i.id, 'url', i.url, 'thumbnail_url', i.thumbnail_url,
+                      'alt_text', i.alt_text, 'display_order', i.display_order,
+                      'width', i.width, 'height', i.height
+                    ) ORDER BY i.display_order)
+               FROM images i
+              WHERE i.garment_id = g.id
+           ), '[]'::json) AS images
+      FROM garments g
+      JOIN categories c ON c.id = g.category_id
+     WHERE ${where}
+     ORDER BY g.created_at DESC
+  `;
+}
+
+/** One garment with every image column, for the detail/edit pages. */
+async function detailSelect(where: Fragment): Promise<GarmentWithImages | null> {
+  const rows = await sql<GarmentWithImages[]>`
+    SELECT g.*,
+           json_build_object('name', c.name, 'slug', c.slug) AS categories,
+           COALESCE((
+             SELECT json_agg(i ORDER BY i.display_order)
+               FROM images i
+              WHERE i.garment_id = g.id
+           ), '[]'::json) AS images
+      FROM garments g
+      JOIN categories c ON c.id = g.category_id
+     WHERE ${where}
+  `;
+  return rows[0] ?? null;
+}
+
+/** Public: featured garments (is_featured = true, published, visible category). */
 export async function getFeaturedGarments(): Promise<GarmentListItem[]> {
-  const supabase = await createServerClient();
-  const { data, error } = await supabase
-    .from("garments")
-    .select(COVER_IMAGE_SELECT)
-    .eq("is_featured", true)
-    .eq("status", "published")
-    .order("created_at", { ascending: false });
-
-  if (error) throw new Error(`getFeaturedGarments: ${error.message}`);
-  return (data ?? []) as GarmentListItem[];
+  await connection();
+  return listSelect(sql`${PUBLIC_FILTER} AND g.is_featured`);
 }
 
-/**
- * Public: all published garments across all visible categories (for Gallery page).
- */
+/** Public: all published garments across all visible categories (for Gallery page). */
 export async function getAllPublishedGarmentsWithImages(): Promise<GarmentListItem[]> {
-  const supabase = await createServerClient();
-  const { data, error } = await supabase
-    .from("garments")
-    .select(COVER_IMAGE_SELECT)
-    .eq("status", "published")
-    .order("created_at", { ascending: false });
-
-  if (error) throw new Error(`getAllPublishedGarmentsWithImages: ${error.message}`);
-  return (data ?? []) as GarmentListItem[];
+  await connection();
+  return listSelect(PUBLIC_FILTER);
 }
 
-/**
- * Public: all published garments in a visible category (by category slug).
- */
-export async function getGarmentsByCategory(
-  categorySlug: string
-): Promise<GarmentListItem[]> {
-  const supabase = await createServerClient();
-
-  // First resolve the category id from slug
-  const { data: catData, error: catError } = await supabase
-    .from("categories")
-    .select("id")
-    .eq("slug", categorySlug)
-    .eq("is_visible", true)
-    .single();
-
-  const cat = catData as { id: string } | null;
-  if (catError || !cat) return [];
-
-  const { data, error } = await supabase
-    .from("garments")
-    .select(COVER_IMAGE_SELECT)
-    .eq("category_id", cat.id)
-    .eq("status", "published")
-    .order("created_at", { ascending: false });
-
-  if (error) throw new Error(`getGarmentsByCategory: ${error.message}`);
-  return (data ?? []) as GarmentListItem[];
+/** Public: all published garments in a visible category (by category slug). */
+export async function getGarmentsByCategory(categorySlug: string): Promise<GarmentListItem[]> {
+  await connection();
+  return listSelect(sql`${PUBLIC_FILTER} AND c.slug = ${categorySlug}`);
 }
 
-/**
- * Public: single published garment with all images and category.
- */
+/** Public: single published garment (in a visible category) with all images. */
 export async function getGarmentBySlug(slug: string): Promise<GarmentWithImages | null> {
-  const supabase = await createServerClient();
-  const { data, error } = await supabase
-    .from("garments")
-    .select(`
-      *,
-      categories ( name, slug ),
-      images ( id, url, thumbnail_url, alt_text, display_order )
-    `)
-    .eq("slug", slug)
-    .eq("status", "published")
-    .order("display_order", { referencedTable: "images", ascending: true })
-    .single();
-
-  if (error) {
-    if (error.code === "PGRST116") return null;
-    throw new Error(`getGarmentBySlug: ${error.message}`);
-  }
-  return data as GarmentWithImages;
+  await connection();
+  return detailSelect(sql`${PUBLIC_FILTER} AND g.slug = ${slug}`);
 }
 
 /**
  * Admin: all garments regardless of status (published + hidden), with
- * optional search and category filter. Relies on the `auth_select_all_garments`
- * RLS policy (TO authenticated) — an anon/unauthenticated request only ever
- * gets back published garments in visible categories, never hidden ones.
+ * optional search and category filter.
  */
 export async function getAllGarmentsAdmin(
   search?: string,
   categoryId?: string
 ): Promise<GarmentListItem[]> {
-  const supabase = await createServerClient();
-  let query = supabase
-    .from("garments")
-    .select(COVER_IMAGE_SELECT)
-    .order("created_at", { ascending: false });
-
+  await requireOwner();
+  const conditions: Fragment[] = [sql`TRUE`];
   if (search) {
-    query = query.ilike("title", `%${search}%`);
+    const escaped = search.replace(/[\\%_]/g, (ch) => `\\${ch}`);
+    conditions.push(sql`g.title ILIKE ${`%${escaped}%`}`);
   }
-  if (categoryId) {
-    query = query.eq("category_id", categoryId);
-  }
-
-  const { data, error } = await query;
-  if (error) throw new Error(`getAllGarmentsAdmin: ${error.message}`);
-  return (data ?? []) as GarmentListItem[];
+  if (categoryId && isUuid(categoryId)) conditions.push(sql`g.category_id = ${categoryId}`);
+  const where = conditions.reduce((acc, cond) => sql`${acc} AND ${cond}`);
+  return listSelect(where);
 }
 
-/**
- * Admin: single garment by id (any status).
- */
+/** Admin: single garment by id (any status). */
 export async function getGarmentByIdAdmin(id: string): Promise<GarmentWithImages | null> {
-  const supabase = await createServerClient();
-  const { data, error } = await supabase
-    .from("garments")
-    .select(`
-      *,
-      categories ( name, slug ),
-      images ( id, url, thumbnail_url, alt_text, display_order )
-    `)
-    .eq("id", id)
-    .order("display_order", { referencedTable: "images", ascending: true })
-    .single();
-
-  if (error) {
-    if (error.code === "PGRST116") return null;
-    throw new Error(`getGarmentByIdAdmin: ${error.message}`);
-  }
-  return data as GarmentWithImages;
+  await requireOwner();
+  if (!isUuid(id)) return null;
+  return detailSelect(sql`g.id = ${id}`);
 }
 
 /**
- * Public: slug + updated_at for every published garment — used to build the
- * sitemap. Runs as anon, so RLS (`anon_select_published_garments`) also
- * excludes any garment sitting in a hidden category, exactly like the public
- * pages themselves.
+ * Public: slug + updated_at for every published garment in a visible
+ * category — used to build the sitemap.
  */
 export async function getAllPublishedGarments(): Promise<{ slug: string; updated_at: string }[]> {
-  const supabase = await createServerClient();
-  const { data, error } = await supabase
-    .from("garments")
-    .select("slug, updated_at")
-    .eq("status", "published")
-    .order("created_at", { ascending: false });
-
-  if (error) throw new Error(`getAllPublishedGarments: ${error.message}`);
-  return data ?? [];
+  await connection();
+  return sql<{ slug: string; updated_at: string }[]>`
+    SELECT g.slug, g.updated_at
+      FROM garments g
+      JOIN categories c ON c.id = g.category_id
+     WHERE ${PUBLIC_FILTER}
+     ORDER BY g.created_at DESC
+  `;
 }
-

@@ -1,0 +1,13 @@
+# Caddy fetches and renews the HTTPS certificate for SITE_DOMAIN automatically.
+{$SITE_DOMAIN}, www.{$SITE_DOMAIN} {
+	@www host www.{$SITE_DOMAIN}
+	redir @www https://{$SITE_DOMAIN}{uri} permanent
+
+	# Large original photos are uploaded through here.
+	request_body {
+		max_size 100MB
+	}
+
+	encode zstd gzip
+	reverse_proxy app:3000
+}

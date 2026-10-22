@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useTransition, useActionState } from "react";
 import { useRouter } from "next/navigation";
-import type { Category, GarmentWithImages, PriceType } from "@/lib/supabase/types";
+import type { Category, GarmentWithImages, PriceType } from "@/lib/db/types";
 import { createGarment, updateGarment, type GarmentFormState } from "@/lib/actions/garments";
 import { createCategory } from "@/lib/actions/categories";
 import GarmentImageUploader from "@/components/admin/GarmentImageUploader";

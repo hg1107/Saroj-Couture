@@ -30,6 +30,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 
-# supabase CLI local state (project ref, org id, pooler URL — not for git)
+# supabase CLI local state (no longer used, kept ignored so it never gets committed)
 supabase/.temp/
 supabase/.branches/
+
+# uploaded photos (local dev)
+src/storage/

@@ -1,0 +1,65 @@
+# Saroj Couture — full self-hosted stack: PostgreSQL + Next.js app + Caddy (HTTPS).
+#
+#   cp .env.example .env   # then fill it in
+#   docker compose up -d --build
+#
+# For local development, just start the database:  docker compose up -d db
+# See DEPLOY.md for the full server setup.
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: couture
+      POSTGRES_USER: couture
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Localhost only (port 5433 so it never clashes with a Postgres already installed on the host) — handy for psql/backups, never reachable from the internet.
+    ports:
+      - "127.0.0.1:${DB_HOST_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U couture -d couture"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: ./src
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:?set NEXT_PUBLIC_SITE_URL in .env}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://couture:${POSTGRES_PASSWORD}@db:5432/couture
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL}
+    volumes:
+      - media:/data/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles: ["prod"]
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?set SITE_DOMAIN in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+    profiles: ["prod"]
+
+volumes:
+  pgdata:     # the database
+  media:      # every photo: originals + web renditions
+  caddy_data: # HTTPS certificates
+  caddy_config:

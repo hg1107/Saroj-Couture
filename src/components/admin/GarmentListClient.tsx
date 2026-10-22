@@ -4,7 +4,7 @@ import { useState, useMemo, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { Category, GarmentListItem, GarmentStatus } from "@/lib/supabase/types";
+import type { Category, GarmentListItem, GarmentStatus } from "@/lib/db/types";
 import { deleteGarment, toggleGarmentStatus, toggleGarmentFeatured } from "@/lib/actions/garments";
 import { formatPrice } from "@/lib/utils/format";
 

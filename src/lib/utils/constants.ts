@@ -54,12 +54,6 @@ export const SEO = {
   ],
 } as const;
 
-// ─── Storage buckets ──────────────────────────────────────────────────────
-export const STORAGE = {
-  garmentImages: "garment-images",
-  categoryCovers: "category-covers",
-} as const;
-
 // ─── Admin ────────────────────────────────────────────────────────────────
 export const ADMIN = {
   /** The "Uncategorised" category slug is reserved and must not be deletable via UI */

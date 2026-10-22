@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import type { GarmentImage } from "@/lib/supabase/types";
+import type { GarmentImage } from "@/lib/db/types";
 import { defaultImageAlt } from "@/lib/utils/format";
 
 interface GarmentImageCarouselProps {

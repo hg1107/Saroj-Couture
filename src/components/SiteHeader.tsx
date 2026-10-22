@@ -3,7 +3,7 @@
  * Server Component: renders static markup, passes categories to NavDrawer.
  */
 import Link from "next/link";
-import type { Category } from "@/lib/supabase/types";
+import type { Category } from "@/lib/db/types";
 import NavDrawer from "./NavDrawer";
 
 interface SiteHeaderProps {

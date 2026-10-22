@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { Category } from "@/lib/supabase/types";
+import type { Category } from "@/lib/db/types";
 
 interface NavDrawerProps {
   categories?: Category[];

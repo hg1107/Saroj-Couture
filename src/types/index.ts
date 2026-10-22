@@ -1,6 +1,6 @@
 /**
  * Shared TypeScript types / interfaces for the Saroj Couture app.
- * More specific DB types live in lib/supabase/types.ts.
+ * More specific DB types live in lib/db/types.ts.
  */
 
 /** Price display variants — mirrors the DB price_type enum */

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { logoutAction } from "@/lib/actions/auth";
+import { requireOwner } from "@/lib/auth/session";
 
 export const metadata: Metadata = {
   title: { default: "Admin Dashboard", template: "%s | Admin — Saroj Couture" },
@@ -20,21 +21,34 @@ function AdminHeader() {
         Manage Work
       </Link>
 
-      {/* Logout */}
-      <form action={logoutAction}>
-        <button
-          type="submit"
-          aria-label="Sign out"
+      <div className="flex items-center">
+        <Link
+          href="/admin/change-password"
+          aria-label="Change password"
           className="text-primary hover:opacity-80 transition-opacity p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary rounded"
         >
-          <span className="material-symbols-outlined" aria-hidden="true">logout</span>
-        </button>
-      </form>
+          <span className="material-symbols-outlined" aria-hidden="true">key</span>
+        </Link>
+
+        {/* Logout */}
+        <form action={logoutAction}>
+          <button
+            type="submit"
+            aria-label="Sign out"
+            className="text-primary hover:opacity-80 transition-opacity p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary rounded"
+          >
+            <span className="material-symbols-outlined" aria-hidden="true">logout</span>
+          </button>
+        </form>
+      </div>
     </header>
   );
 }
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  // The real auth gate for every dashboard page (the proxy redirect is only a convenience).
+  await requireOwner();
+
   return (
     <div className="min-h-dvh flex flex-col bg-surface-container-low">
       <AdminHeader />
