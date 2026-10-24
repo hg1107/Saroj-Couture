@@ -19,7 +19,8 @@ const nextConfig: NextConfig = {
   // Never ship readable source maps to the browser in production.
   productionBrowserSourceMaps: false,
   // Self-contained server bundle (.next/standalone) for the Docker image.
-  output: "standalone",
+  // Skipped on Vercel, which does its own packaging and fails with it set.
+  ...(process.env.VERCEL ? {} : { output: "standalone" as const }),
   // Pin the Turbopack root to this folder (the repo root above it isn't an npm package).
   turbopack: {
     root: path.join(__dirname),
