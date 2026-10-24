@@ -29,7 +29,9 @@ on:
 jobs:
   Fortify-AST-Scan:
     # Use the appropriate runner for building your source code. Ensure dev tools required to build your code are present and configured appropriately (MSBuild, Python, etc).
-    if: ${{ (secrets.FOD_USER != '' && secrets.FOD_PAT != '') || (secrets.FOD_CLIENT_ID != '' && secrets.FOD_CLIENT_SECRET != '') || (secrets.SSC_TOKEN != '' && secrets.SC_CLIENT_AUTH_TOKEN != '') }}
+    env:
+      HAS_FOD_CREDS: ${{ secrets.FOD_USER != '' && secrets.FOD_PAT != '' }}
+      HAS_SSC_CREDS: ${{ secrets.SSC_TOKEN != '' && secrets.SC_CLIENT_AUTH_TOKEN != '' }}
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -40,6 +42,7 @@ jobs:
     steps:
       # Check out source code
       - name: Check Out Source Code
+        if: ${{ env.HAS_FOD_CREDS == 'true' || env.HAS_SSC_CREDS == 'true' }}
         uses: actions/checkout@v4
 
       # Perform SAST and/or SCA scan via Fortify on Demand/Fortify Hosted/ScanCentral SAST/Debricked. Based on
@@ -51,6 +54,7 @@ jobs:
       # documentation at https://github.com/fortify/github-action#readme for more information on the various
       # configuration options and available sub-actions.
       - name: Run Fortify Scan
+        if: ${{ env.HAS_FOD_CREDS == 'true' || env.HAS_SSC_CREDS == 'true' }}
         # Specify Fortify GitHub Action version to run. As per GitHub starter workflow requirements, this example
         # uses the commit id corresponding to version 1.6.2. It is recommended to check whether any later releases
         # are available at https://github.com/fortify/github-action/releases. Depending on the amount of stability
